@@ -1,5 +1,7 @@
 package com.SecureDoctor_Patients.Records.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -16,9 +18,9 @@ public class User {
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String password;
+     @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
+@Column(name = "password_hash", nullable = false)
+private String passwordHash;
 
     @Column(name = "phone", nullable = false)
     private String phone;
@@ -56,12 +58,12 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getPhone() {

@@ -26,17 +26,20 @@ public class UserController {
         this.userService = userService;
     }
 
+    // CREATE USER
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         User savedUser = userService.saveUser(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
 
+    // GET ALL USERS
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    // GET USER BY ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
@@ -44,6 +47,7 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // GET USER BY EMAIL
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email)
@@ -51,26 +55,36 @@ public class UserController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // UPDATE USER
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<User> updateUser(
+            @PathVariable Long id,
+            @RequestBody User userDetails) {
+
         return userService.getUserById(id)
                 .map(existingUser -> {
+
                     existingUser.setFullName(userDetails.getFullName());
                     existingUser.setEmail(userDetails.getEmail());
-                    existingUser.setPassword(userDetails.getPassword());
                     existingUser.setPhone(userDetails.getPhone());
                     existingUser.setRole(userDetails.getRole());
-                    return ResponseEntity.ok(userService.saveUser(existingUser));
+
+                    return ResponseEntity.ok(
+                            userService.saveUser(existingUser)
+                    );
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // DELETE USER
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+
         if (userService.getUserById(id).isPresent()) {
             userService.deleteUser(id);
             return ResponseEntity.noContent().build();
         }
+
         return ResponseEntity.notFound().build();
     }
 }

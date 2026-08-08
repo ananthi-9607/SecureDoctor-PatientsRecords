@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,75 +31,109 @@ class UserServiceTest {
 
     @Test
     void saveUser_shouldReturnSavedUser() {
+
         User user = buildUser(1L, "Jane Doe", "jane@example.com");
-        when(userRepository.save(user)).thenReturn(user);
+
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         User savedUser = userService.saveUser(user);
 
         assertSame(user, savedUser);
+
         verify(userRepository).save(user);
     }
 
     @Test
     void getAllUsers_shouldReturnAllUsers() {
-        List<User> users = List.of(buildUser(1L, "Jane Doe", "jane@example.com"), buildUser(2L, "John Doe", "john@example.com"));
+
+        List<User> users = List.of(
+                buildUser(1L, "Jane Doe", "jane@example.com"),
+                buildUser(2L, "John Doe", "john@example.com")
+        );
+
         when(userRepository.findAll()).thenReturn(users);
 
         List<User> result = userService.getAllUsers();
 
         assertEquals(users, result);
+
         verify(userRepository).findAll();
     }
 
     @Test
     void getUserById_shouldReturnUserWhenPresent() {
+
         User user = buildUser(1L, "Jane Doe", "jane@example.com");
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
 
         Optional<User> result = userService.getUserById(1L);
 
         assertTrue(result.isPresent());
         assertSame(user, result.get());
+
         verify(userRepository).findById(1L);
     }
 
     @Test
     void getUserByEmail_shouldReturnUserWhenPresent() {
-        User user = buildUser(1L, "Jane Doe", "jane@example.com");
-        when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
 
-        Optional<User> result = userService.getUserByEmail("jane@example.com");
+        User user = buildUser(1L, "Jane Doe", "jane@example.com");
+
+        when(userRepository.findByEmail("jane@example.com"))
+                .thenReturn(Optional.of(user));
+
+        Optional<User> result =
+                userService.getUserByEmail("jane@example.com");
 
         assertTrue(result.isPresent());
         assertSame(user, result.get());
+
         verify(userRepository).findByEmail("jane@example.com");
     }
 
     @Test
     void getUserByEmail_shouldReturnEmptyWhenUserDoesNotExist() {
-        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
 
-        Optional<User> result = userService.getUserByEmail("missing@example.com");
+        when(userRepository.findByEmail("missing@example.com"))
+                .thenReturn(Optional.empty());
+
+        Optional<User> result =
+                userService.getUserByEmail("missing@example.com");
 
         assertFalse(result.isPresent());
-        verify(userRepository).findByEmail("missing@example.com");
+
+        verify(userRepository)
+                .findByEmail("missing@example.com");
     }
 
     @Test
     void deleteUser_shouldDelegateToRepository() {
+
         userService.deleteUser(5L);
 
         verify(userRepository).deleteById(5L);
     }
 
-    private User buildUser(Long id, String fullName, String email) {
+    private User buildUser(
+            Long id,
+            String fullName,
+            String email) {
+
         User user = new User();
+
         user.setId(id);
         user.setFullName(fullName);
         user.setEmail(email);
-        user.setPassword("secret");
+
+        // Plain password for testing.
+        // UserService will BCrypt-hash it before saving.
+        user.setPasswordHash("secret");
+
         user.setPhone("1234567890");
         user.setRole("PATIENT");
+
         return user;
     }
 }
