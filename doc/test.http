@@ -1,0 +1,46 @@
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+    "fullName": "Test Doctor 6",
+    "email": "testdoctor6@gmail.com",
+    "password": "test123",
+    "phone": "9876543215",
+    "role": "DOCTOR"
+}
+### Get all users
+GET http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "fullName": "Test Doctor 2",
+  "email": "testdoctor2@gmail.com",
+  "password": "test123",
+  "phone": "9876543213",
+  "role": "Doctor"
+}
+### Update User
+PUT http://localhost:8080/users/5
+Content-Type: application/json
+
+{
+  "fullName": "Updated Doctor",
+  "email": "updateddoctor@gmail.com",
+  "phone": "9876543000",
+  "role": "Doctor"
+}
+### Delete User
+DELETE http://localhost:8080/users/5
+
+
+
+
+
+###Login
+POST http://localhost:8080/users/login
+Content-Type: application/json
+
+{
+    "email": "marimuthu987@gmail.com",
+    "password": "ananthi@123"
+}
