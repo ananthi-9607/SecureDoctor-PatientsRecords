@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,37 +16,193 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    private final BCryptPasswordEncoder passwordEncoder =
+            new BCryptPasswordEncoder();
+
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+
     public UserService(UserRepository userRepository) {
-        this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
+
+        this.userRepository =
+                Objects.requireNonNull(
+                        userRepository,
+                        "userRepository must not be null"
+                );
     }
 
-    // Save User
+
+    // =========================
+    // REGISTER / SAVE USER
+    // =========================
+
     @Transactional
     public User saveUser(User user) {
-        return userRepository.save(Objects.requireNonNull(user, "user must not be null"));
+
+        Objects.requireNonNull(
+                user,
+                "user must not be null"
+        );
+
+
+        // =========================
+        // CHECK DUPLICATE EMAIL
+        // =========================
+
+        if (userRepository.existsByEmail(user.getEmail())) {
+
+            throw new IllegalArgumentException(
+                    "Email already registered"
+            );
+        }
+
+
+        // =========================
+        // HASH PASSWORD
+        // =========================
+
+        if (user.getPasswordHash() != null
+                && !user.getPasswordHash().isBlank()
+                && !user.getPasswordHash().startsWith("$2a$")
+                && !user.getPasswordHash().startsWith("$2b$")
+                && !user.getPasswordHash().startsWith("$2y$")) {
+
+            user.setPasswordHash(
+                    passwordEncoder.encode(
+                            user.getPasswordHash()
+                    )
+            );
+        }
+
+
+        // Save user
+        return userRepository.save(user);
     }
 
-    // Get all users
+
+    // =========================
+    // LOGIN
+    // =========================
+
+    @Transactional(readOnly = true)
+    public User login(
+            String email,
+            String password) {
+
+        Objects.requireNonNull(
+                email,
+                "email must not be null"
+        );
+
+        Objects.requireNonNull(
+                password,
+                "password must not be null"
+        );
+
+
+        // Find user by email
+        Optional<User> userOptional =
+                userRepository.findByEmail(email);
+
+
+        // Email not found
+        if (userOptional.isEmpty()) {
+            return null;
+        }
+
+
+        User user = userOptional.get();
+
+
+        // Check password using BCrypt
+        boolean passwordMatches =
+                passwordEncoder.matches(
+                        password,
+                        user.getPasswordHash()
+                );
+
+
+        // Login successful
+        if (passwordMatches) {
+            return user;
+        }
+
+
+        // Wrong password
+        return null;
+    }
+
+
+    // =========================
+    // GET ALL USERS
+    // =========================
+
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
+
         return userRepository.findAll();
     }
 
-    // Get user by ID
+
+    // =========================
+    // GET USER BY ID
+    // =========================
+
     @Transactional(readOnly = true)
     public Optional<User> getUserById(Long id) {
-        return userRepository.findById(Objects.requireNonNull(id, "id must not be null"));
+
+        return userRepository.findById(
+                Objects.requireNonNull(
+                        id,
+                        "id must not be null"
+                )
+        );
     }
 
-    // Get user by Email
+
+    // =========================
+    // GET USER BY EMAIL
+    // =========================
+
     @Transactional(readOnly = true)
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(Objects.requireNonNull(email, "email must not be null"));
+    public Optional<User> getUserByEmail(
+            String email) {
+
+        return userRepository.findByEmail(
+                Objects.requireNonNull(
+                        email,
+                        "email must not be null"
+                )
+        );
     }
 
-    // Delete user
+
+    // =========================
+    // GET USERS BY ROLE
+    // =========================
+
+    @Transactional(readOnly = true)
+    public List<User> getUsersByRole(
+            String role) {
+
+        return userRepository.findByRole(role);
+    }
+
+
+    // =========================
+    // DELETE USER
+    // =========================
+
     @Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(Objects.requireNonNull(id, "id must not be null"));
+
+        userRepository.deleteById(
+                Objects.requireNonNull(
+                        id,
+                        "id must not be null"
+                )
+        );
     }
 }

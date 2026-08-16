@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.SecureDoctor_Patients.Records.backend.dto.LoginRequest;
 import com.SecureDoctor_Patients.Records.backend.entity.User;
 import com.SecureDoctor_Patients.Records.backend.service.UserService;
 
@@ -22,69 +23,188 @@ public class UserController {
 
     private final UserService userService;
 
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+
     public UserController(UserService userService) {
+
         this.userService = userService;
     }
 
+
+    // =========================
     // CREATE USER
+    // =========================
+
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User savedUser = userService.saveUser(user);
-        return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
+    public ResponseEntity<User> createUser(
+            @RequestBody User user) {
+
+        User savedUser =
+                userService.saveUser(user);
+
+        return new ResponseEntity<>(
+                savedUser,
+                HttpStatus.CREATED
+        );
     }
 
+
+    // =========================
     // GET ALL USERS
+    // =========================
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+
+        return ResponseEntity.ok(
+                userService.getAllUsers()
+        );
     }
 
+
+    // =========================
+    // GET ALL DOCTORS
+    // =========================
+
+    @GetMapping("/doctors")
+    public ResponseEntity<List<User>> getDoctors() {
+
+        return ResponseEntity.ok(
+                userService.getUsersByRole("Doctor")
+        );
+    }
+
+
+    // =========================
+    // LOGIN
+    // =========================
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @RequestBody LoginRequest request) {
+
+        User user =
+                userService.login(
+                        request.getEmail(),
+                        request.getPassword()
+                );
+
+        if (user != null) {
+
+            return ResponseEntity.ok(user);
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Invalid email or password");
+    }
+
+
+    // =========================
     // GET USER BY ID
+    // =========================
+
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
+    public ResponseEntity<User> getUserById(
+            @PathVariable Long id) {
+
+        return userService
+                .getUserById(id)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(
+                        () -> ResponseEntity
+                                .notFound()
+                                .build()
+                );
     }
 
+
+    // =========================
     // GET USER BY EMAIL
+    // =========================
+
     @GetMapping("/email/{email}")
-    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        return userService.getUserByEmail(email)
+    public ResponseEntity<User> getUserByEmail(
+            @PathVariable String email) {
+
+        return userService
+                .getUserByEmail(email)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(
+                        () -> ResponseEntity
+                                .notFound()
+                                .build()
+                );
     }
 
+
+    // =========================
     // UPDATE USER
+    // =========================
+
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(
             @PathVariable Long id,
             @RequestBody User userDetails) {
 
-        return userService.getUserById(id)
+        return userService
+                .getUserById(id)
                 .map(existingUser -> {
 
-                    existingUser.setFullName(userDetails.getFullName());
-                    existingUser.setEmail(userDetails.getEmail());
-                    existingUser.setPhone(userDetails.getPhone());
-                    existingUser.setRole(userDetails.getRole());
+                    existingUser.setFullName(
+                            userDetails.getFullName()
+                    );
+
+                    existingUser.setEmail(
+                            userDetails.getEmail()
+                    );
+
+                    existingUser.setPhone(
+                            userDetails.getPhone()
+                    );
+
+                    existingUser.setRole(
+                            userDetails.getRole()
+                    );
 
                     return ResponseEntity.ok(
-                            userService.saveUser(existingUser)
+                            userService.saveUser(
+                                    existingUser
+                            )
                     );
                 })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(
+                        () -> ResponseEntity
+                                .notFound()
+                                .build()
+                );
     }
 
-    // DELETE USER
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
 
-        if (userService.getUserById(id).isPresent()) {
+    // =========================
+    // DELETE USER
+    // =========================
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id) {
+
+        if (userService
+                .getUserById(id)
+                .isPresent()) {
+
             userService.deleteUser(id);
-            return ResponseEntity.noContent().build();
+
+            return ResponseEntity
+                    .noContent()
+                    .build();
         }
 
-        return ResponseEntity.notFound().build();
+        return ResponseEntity
+                .notFound()
+                .build();
     }
 }

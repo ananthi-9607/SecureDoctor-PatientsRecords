@@ -44,3 +44,41 @@ Content-Type: application/json
     "email": "marimuthu987@gmail.com",
     "password": "ananthi@123"
 }
+
+### Create Appointment
+
+POST http://localhost:8080/appointments
+Content-Type: application/json
+
+{
+  "doctorId": 1,
+  "patientId": 2,
+  "appointmentDate": "2026-08-15",
+  "appointmentTime": "10:00:00",
+  "status": "Booked"
+}
+
+### Get All Appointments
+
+GET http://localhost:8080/appointments
+Content-Type: application/json
+
+### Get Appointment By ID
+
+GET http://localhost:8080/appointments/1
+Content-Type: application/json
+
+### Update Appointment
+
+PUT http://localhost:8080/appointments/1
+Content-Type: application/json
+
+{
+  "doctorId": 1,
+  "patientId": 2,
+  "appointmentDate": "2026-08-16",
+  "appointmentTime": "11:30:00",
+  "status": "Confirmed"
+}
+###
+DELETE http://localhost:8080/appointments/3

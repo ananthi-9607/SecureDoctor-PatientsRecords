@@ -1,10 +1,15 @@
 import { useState } from "react";
 import "./App.css";
 import Appointment from "./Appointment";
+import DoctorDashboard from "./DoctorDashboard";
 
 function App() {
+
   const [isRegister, setIsRegister] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Logged-in user details
+  const [loggedInUser, setLoggedInUser] = useState(null);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -12,21 +17,33 @@ function App() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("Patient");
 
+
+  // =========================
+  // REGISTER / LOGIN
+  // =========================
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
 
     // =========================
     // REGISTRATION
     // =========================
+
     if (isRegister) {
+
       try {
+
         const response = await fetch(
           "http://localhost:8080/users",
           {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json",
             },
+
             body: JSON.stringify({
               fullName,
               email,
@@ -37,49 +54,79 @@ function App() {
           }
         );
 
+
         if (response.ok) {
+
           const data = await response.json();
 
-          console.log("Registration successful:", data);
+          console.log(
+            "Registration successful:",
+            data
+          );
 
-          alert("Registration successful!");
+          alert(
+            "Registration successful!"
+          );
 
+
+          // Clear fields
           setFullName("");
           setEmail("");
           setPassword("");
           setPhone("");
           setRole("Patient");
 
-          // After registration, go back to Login
+
+          // Go back to Login
           setIsRegister(false);
 
         } else {
-          const errorText = await response.text();
 
-          console.error("Registration failed:", errorText);
+          const errorText =
+            await response.text();
 
-          alert(`Registration failed: ${errorText}`);
+          console.error(
+            "Registration failed:",
+            errorText
+          );
+
+          alert(
+            errorText ||
+            "Registration failed!"
+          );
         }
 
-      } catch (error) {
-        console.error("Backend connection error:", error);
 
-        alert("Backend connection failed!");
+      } catch (error) {
+
+        console.error(
+          "Backend connection error:",
+          error
+        );
+
+        alert(
+          "Backend connection failed!"
+        );
       }
+
 
     // =========================
     // LOGIN
     // =========================
+
     } else {
 
       try {
+
         const response = await fetch(
           "http://localhost:8080/users/login",
           {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json",
             },
+
             body: JSON.stringify({
               email,
               password,
@@ -87,66 +134,158 @@ function App() {
           }
         );
 
+
+        // =========================
+        // LOGIN SUCCESS
+        // =========================
+
         if (response.ok) {
 
-          const data = await response.text();
+          // Backend now returns User object
+          const userData =
+            await response.json();
 
-          console.log("Login successful:", data);
 
-          alert("Login successful!");
+          console.log(
+            "Logged-in user:",
+            userData
+          );
+
+          console.log(
+            "USER ID:",
+            userData.userId
+          );
+
+          console.log(
+            "USER NAME:",
+            userData.fullName
+          );
+
+          console.log(
+            "USER EMAIL:",
+            userData.email
+          );
+
+          console.log(
+            "USER ROLE:",
+            userData.role
+          );
+
+
+          // Store logged-in user
+          setLoggedInUser(userData);
 
           setIsLoggedIn(true);
 
+
+          alert(
+            "Login successful!"
+          );
+
+
         } else {
 
-          const errorText = await response.text();
+          const errorText =
+            await response.text();
 
-          console.error("Login failed:", errorText);
+          console.error(
+            "Login failed:",
+            errorText
+          );
 
-          alert("Invalid email or password");
+          alert(
+            "Invalid email or password"
+          );
         }
+
 
       } catch (error) {
 
-        console.error("Backend connection error:", error);
+        console.error(
+          "Backend connection error:",
+          error
+        );
 
-        alert("Backend connection failed!");
+        alert(
+          "Backend connection failed!"
+        );
       }
     }
   };
 
+
   // =========================
   // AFTER LOGIN
   // =========================
-  if (isLoggedIn) {
-    return <Appointment />;
+if (isLoggedIn && loggedInUser) {
+
+  const userId =
+    loggedInUser.userId ??
+    loggedInUser.user_id ??
+    loggedInUser.id;
+
+  // Doctor
+  if (
+    loggedInUser.role &&
+    loggedInUser.role.toLowerCase() === "doctor"
+  ) {
+
+    return (
+      <DoctorDashboard
+        doctorId={userId}
+        doctorName={loggedInUser.fullName}
+      />
+    );
   }
 
+  // Patient
+  return (
+    <Appointment
+      patientId={userId}
+      patientName={loggedInUser.fullName}
+    />
+  );
+}
   // =========================
   // LOGIN / REGISTER PAGE
   // =========================
+
   return (
+
     <div className="login-page">
 
       <div className="login-card">
 
-        <h1>SecureDoctor</h1>
+        <h1>
+          SecureDoctor
+        </h1>
 
         <p className="subtitle">
           Secure Doctor-Patient Records
         </p>
 
+
         <h2>
-          {isRegister ? "Create Account" : "Login"}
+          {isRegister
+            ? "Create Account"
+            : "Login"}
         </h2>
+
 
         <form onSubmit={handleSubmit}>
 
-          {/* FULL NAME */}
+
+          {/* =========================
+              FULL NAME
+          ========================= */}
+
           {isRegister && (
+
             <div className="form-group">
 
-              <label>Full Name</label>
+              <label>
+                Full Name
+              </label>
 
               <input
                 type="text"
@@ -161,11 +300,18 @@ function App() {
             </div>
           )}
 
-          {/* PHONE */}
+
+          {/* =========================
+              PHONE
+          ========================= */}
+
           {isRegister && (
+
             <div className="form-group">
 
-              <label>Phone</label>
+              <label>
+                Phone
+              </label>
 
               <input
                 type="tel"
@@ -180,11 +326,18 @@ function App() {
             </div>
           )}
 
-          {/* ROLE */}
+
+          {/* =========================
+              ROLE
+          ========================= */}
+
           {isRegister && (
+
             <div className="form-group">
 
-              <label>Role</label>
+              <label>
+                Role
+              </label>
 
               <select
                 value={role}
@@ -206,10 +359,16 @@ function App() {
             </div>
           )}
 
-          {/* EMAIL */}
+
+          {/* =========================
+              EMAIL
+          ========================= */}
+
           <div className="form-group">
 
-            <label>Email</label>
+            <label>
+              Email
+            </label>
 
             <input
               type="email"
@@ -223,10 +382,16 @@ function App() {
 
           </div>
 
-          {/* PASSWORD */}
+
+          {/* =========================
+              PASSWORD
+          ========================= */}
+
           <div className="form-group">
 
-            <label>Password</label>
+            <label>
+              Password
+            </label>
 
             <input
               type="password"
@@ -240,7 +405,11 @@ function App() {
 
           </div>
 
-          {/* SUBMIT BUTTON */}
+
+          {/* =========================
+              SUBMIT BUTTON
+          ========================= */}
+
           <button type="submit">
 
             {isRegister
@@ -251,7 +420,11 @@ function App() {
 
         </form>
 
-        {/* LOGIN / REGISTER SWITCH */}
+
+        {/* =========================
+            LOGIN / REGISTER SWITCH
+        ========================= */}
+
         <p className="register-text">
 
           {isRegister
@@ -276,6 +449,7 @@ function App() {
 
     </div>
   );
+  
 }
 
 export default App;

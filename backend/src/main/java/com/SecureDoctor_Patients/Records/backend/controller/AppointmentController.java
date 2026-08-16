@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.SecureDoctor_Patients.Records.backend.entity.Appointment;
@@ -60,6 +61,18 @@ public class AppointmentController {
                         () -> ResponseEntity.notFound().build()
                 );
     }
+    // =========================
+// GET APPOINTMENTS BY DOCTOR
+// =========================
+
+@GetMapping("/doctor/{doctorId}")
+public ResponseEntity<List<Appointment>> getAppointmentsByDoctor(
+        @PathVariable Long doctorId) {
+
+    return ResponseEntity.ok(
+            appointmentService.getAppointmentsByDoctor(doctorId)
+    );
+}
 
     // UPDATE APPOINTMENT
     @PutMapping("/{id}")
@@ -79,6 +92,24 @@ public class AppointmentController {
 
         return ResponseEntity.ok(updatedAppointment);
     }
+    @PutMapping("/{id}/status")
+public ResponseEntity<Appointment> updateAppointmentStatus(
+        @PathVariable Long id,
+        @RequestParam String status) {
+
+    Appointment updatedAppointment =
+            appointmentService.updateAppointmentStatus(
+                    id,
+                    status
+            );
+
+    if (updatedAppointment != null) {
+        return ResponseEntity.ok(updatedAppointment);
+    }
+
+    return ResponseEntity.notFound().build();
+}
+
 
     // DELETE APPOINTMENT
     @DeleteMapping("/{id}")
