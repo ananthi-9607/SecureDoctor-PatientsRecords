@@ -1,124 +1,155 @@
 import { useEffect, useState } from "react";
+import "./DoctorDashboard.css";
 
 function DoctorDashboard({ doctorId, doctorName }) {
-
   const [appointments, setAppointments] = useState([]);
+  const [patientNames, setPatientNames] = useState({});
   const [loading, setLoading] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+
   // =========================
-// UPDATE APPOINTMENT STATUS
-// =========================
+  // LOAD DOCTOR APPOINTMENTS
+  // =========================
 
-const updateAppointmentStatus = async (
-  appointmentId,
-  newStatus
-) => {
+  const loadAppointments = async () => {
+    try {
+      setLoading(true);
 
-  try {
+      const response = await fetch(
+        `http://localhost:8080/appointments/doctor/${doctorId}`
+      );
 
-    const response = await fetch(
-      `http://localhost:8080/appointments/${appointmentId}/status?status=${newStatus}`,
-      {
-        method: "PUT",
+      if (!response.ok) {
+        throw new Error("Unable to load appointments");
       }
-    );
 
-    if (response.ok) {
+      const data = await response.json();
 
-      const updatedAppointment =
-        await response.json();
+      setAppointments(data);
 
-      console.log(
-        "Appointment updated:",
-        updatedAppointment
+      // =========================
+      // LOAD PATIENT NAMES
+      // =========================
+
+      const uniquePatientIds = [
+        ...new Set(
+          data
+            .map((appointment) => appointment.patientId)
+            .filter(Boolean)
+        ),
+      ];
+
+      const patientData = {};
+
+      await Promise.all(
+        uniquePatientIds.map(async (patientId) => {
+          try {
+            const patientResponse = await fetch(
+              `http://localhost:8080/users/${patientId}`
+            );
+
+            if (patientResponse.ok) {
+              const patient = await patientResponse.json();
+
+              patientData[patientId] =
+                patient.fullName || "Patient";
+            }
+          } catch (error) {
+            console.error(
+              "Unable to load patient:",
+              patientId,
+              error
+            );
+          }
+        })
       );
 
-      setAppointments((previousAppointments) =>
-        previousAppointments.map(
-          (appointment) =>
-            appointment.appointmentId === appointmentId
-              ? updatedAppointment
-              : appointment
-        )
-      );
+      setPatientNames(patientData);
 
-      alert(
-        `Appointment ${newStatus.toLowerCase()} successfully!`
-      );
-
-    } else {
-
-      const errorText =
-        await response.text();
-
+    } catch (error) {
       console.error(
-        "Status update failed:",
-        errorText
+        "Error loading appointments:",
+        error
       );
 
-      alert(
-        errorText ||
-        "Unable to update appointment."
-      );
+      alert("Unable to load appointments.");
+
+    } finally {
+      setLoading(false);
     }
+  };
 
-  } catch (error) {
-
-    console.error(
-      "Backend connection error:",
-      error
-    );
-
-    alert(
-      "Backend connection failed!"
-    );
-  }
-};
 
   useEffect(() => {
-
-    const fetchAppointments = async () => {
-
-      try {
-
-        const response = await fetch(
-          `http://localhost:8080/appointments/doctor/${doctorId}`
-        );
-
-        if (response.ok) {
-
-          const data = await response.json();
-
-          setAppointments(data);
-
-        } else {
-
-          alert("Unable to load appointments.");
-        }
-
-      } catch (error) {
-
-        console.error(error);
-
-        alert("Backend connection failed!");
-
-      } finally {
-
-        setLoading(false);
-      }
-    };
-
     if (doctorId) {
-      fetchAppointments();
+      loadAppointments();
     }
-
   }, [doctorId]);
 
 
   // =========================
-  // STATISTICS
+  // UPDATE APPOINTMENT STATUS
   // =========================
 
-  const totalAppointments = appointments.length;
+  const updateAppointmentStatus = async (
+    appointmentId,
+    newStatus
+  ) => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/appointments/${appointmentId}/status?status=${newStatus}`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (response.ok) {
+
+        const updatedAppointment =
+          await response.json();
+
+        setAppointments((previousAppointments) =>
+          previousAppointments.map(
+            (appointment) =>
+              appointment.appointmentId === appointmentId
+                ? updatedAppointment
+                : appointment
+          )
+        );
+
+      } else {
+
+        const errorText =
+          await response.text();
+
+        alert(
+          errorText ||
+          "Unable to update appointment."
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Status update error:",
+        error
+      );
+
+      alert(
+        "Backend connection failed!"
+      );
+    }
+  };
+
+
+  // =========================
+  // DASHBOARD COUNTS
+  // =========================
+
+  const totalAppointments =
+    appointments.length;
 
   const bookedAppointments =
     appointments.filter(
@@ -140,21 +171,21 @@ const updateAppointmentStatus = async (
 
 
   // =========================
-  // LOADING
+  // GET STATUS CLASS
   // =========================
 
-  if (loading) {
+  const getStatusClass = (status) => {
 
-    return (
-      <div className="doctor-dashboard-page">
+    if (status === "Confirmed") {
+      return "doctor-status doctor-confirmed";
+    }
 
-        <div className="dashboard-loading">
-          Loading dashboard...
-        </div>
+    if (status === "Cancelled") {
+      return "doctor-status doctor-cancelled";
+    }
 
-      </div>
-    );
-  }
+    return "doctor-status doctor-booked";
+  };
 
 
   return (
@@ -167,79 +198,223 @@ const updateAppointmentStatus = async (
 
       <aside className="doctor-sidebar">
 
-        <div className="doctor-logo">
-          <h2>SecureDoctor</h2>
-          <span>Doctor Portal</span>
+        <div className="doctor-sidebar-brand">
+
+          <div className="doctor-brand-icon">
+            ✚
+          </div>
+
+          <div>
+            <h1>SecureDoctor</h1>
+            <p>Doctor Portal</p>
+          </div>
+
         </div>
 
-        <nav>
 
-          <div className="sidebar-item active">
-            🏠 Dashboard
+        <div className="doctor-nav-section">
+
+          <p className="doctor-nav-title">
+            MAIN MENU
+          </p>
+
+          <button className="doctor-nav-item active">
+
+            <span className="doctor-nav-icon">
+              ▦
+            </span>
+
+            Dashboard
+
+          </button>
+
+
+          <button className="doctor-nav-item">
+
+            <span className="doctor-nav-icon">
+              ▣
+            </span>
+
+            Appointments
+
+            {bookedAppointments > 0 && (
+
+              <span className="doctor-nav-badge">
+                {bookedAppointments}
+              </span>
+
+            )}
+
+          </button>
+
+
+          <button className="doctor-nav-item">
+
+            <span className="doctor-nav-icon">
+              ♙
+            </span>
+
+            Patients
+
+          </button>
+
+        </div>
+
+
+        <div className="doctor-sidebar-footer">
+
+          <div className="doctor-security-box">
+
+            <div className="doctor-security-icon">
+              🔒
+            </div>
+
+            <div>
+
+              <strong>
+                Secure Platform
+              </strong>
+
+              <p>
+                Your data is protected
+              </p>
+
+            </div>
+
           </div>
 
-          <div className="sidebar-item">
-            📅 Appointments
-          </div>
-
-          <div className="sidebar-item">
-            👤 Patients
-          </div>
-
-          <div className="sidebar-item">
-            📋 Medical Records
-          </div>
-
-        </nav>
-
-        <div className="sidebar-footer">
-          🔒 Secure & Private
         </div>
 
       </aside>
 
 
       {/* =========================
-          MAIN CONTENT
+          MAIN AREA
       ========================= */}
 
-      <main className="doctor-main">
+      <div className="doctor-main-area">
 
-        {/* HEADER */}
 
-        <header className="doctor-header">
+        {/* =========================
+            TOP HEADER
+        ========================= */}
+
+        <header className="doctor-topbar">
 
           <div>
 
-            <h1>
-              Doctor Dashboard
-            </h1>
-
-            <p>
-              Manage your appointments and patients
-              securely.
+            <p className="doctor-page-label">
+              SECUREDOCTOR PORTAL
             </p>
+
+            <h2>
+              Doctor Dashboard
+            </h2>
 
           </div>
 
 
-          <div className="doctor-profile">
+          <div className="doctor-top-actions">
 
-            <div className="doctor-avatar">
-              {doctorName
-                ? doctorName.charAt(0).toUpperCase()
-                : "D"}
-            </div>
+            <button className="doctor-notification">
+              🔔
 
-            <div>
+              {bookedAppointments > 0 && (
+                <span className="doctor-notification-dot"></span>
+              )}
 
-              <strong>
-                Dr. {doctorName}
-              </strong>
+            </button>
 
-              <span>
-                Doctor
-              </span>
+
+            <div className="doctor-profile-wrapper">
+
+              <button
+                className="doctor-profile-button"
+                onClick={() =>
+                  setProfileOpen(!profileOpen)
+                }
+              >
+
+                <div className="doctor-avatar">
+
+                  {doctorName
+                    ? doctorName.charAt(0).toUpperCase()
+                    : "D"}
+
+                </div>
+
+
+                <div className="doctor-profile-info">
+
+                  <strong>
+                    {doctorName || "Doctor"}
+                  </strong>
+
+                  <span>
+                    Medical Professional
+                  </span>
+
+                </div>
+
+                <span className="doctor-arrow">
+                  ▾
+                </span>
+
+              </button>
+
+
+              {profileOpen && (
+
+                <div className="doctor-profile-menu">
+
+                  <div className="doctor-profile-menu-header">
+
+                    <div className="doctor-avatar large">
+
+                      {doctorName
+                        ? doctorName.charAt(0).toUpperCase()
+                        : "D"}
+
+                    </div>
+
+                    <div>
+
+                      <strong>
+                        {doctorName || "Doctor"}
+                      </strong>
+
+                      <p>
+                        Doctor Account
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="doctor-menu-divider"></div>
+
+
+                  <button>
+                    👤 My Profile
+                  </button>
+
+                  <button>
+                    ⚙ Settings
+                  </button>
+
+                  <button
+                    className="doctor-logout-button"
+                    onClick={() =>
+                      window.location.reload()
+                    }
+                  >
+                    ↪ Logout
+                  </button>
+
+                </div>
+
+              )}
 
             </div>
 
@@ -249,307 +424,443 @@ const updateAppointmentStatus = async (
 
 
         {/* =========================
-            WELCOME CARD
+            DASHBOARD CONTENT
         ========================= */}
 
-        <section className="doctor-welcome-card">
-
-          <div>
-
-            <span>
-              Welcome back 👋
-            </span>
-
-            <h2>
-              Dr. {doctorName}
-            </h2>
-
-            <p>
-              Here's your appointment overview
-              for today.
-            </p>
-
-          </div>
-
-          <div className="welcome-icon">
-            🩺
-          </div>
-
-        </section>
+        <main className="doctor-dashboard-content">
 
 
-        {/* =========================
-            STATISTICS
-        ========================= */}
+          {/* WELCOME SECTION */}
 
-        <section className="doctor-stats">
-
-          <div className="stat-card">
-
-            <div className="stat-icon">
-              📅
-            </div>
+          <section className="doctor-welcome-section">
 
             <div>
 
-              <span>
-                Total Appointments
-              </span>
+              <p className="doctor-welcome-small">
+                GOOD TO SEE YOU
+              </p>
 
-              <h2>
-                {totalAppointments}
-              </h2>
+              <h1>
+                Welcome back, Dr. {doctorName || "Doctor"} 👋
+              </h1>
 
-            </div>
+              <p className="doctor-welcome-text">
 
-          </div>
+                Manage your appointments and
+                patient requests securely from
+                one place.
 
-
-          <div className="stat-card">
-
-            <div className="stat-icon">
-              🕐
-            </div>
-
-            <div>
-
-              <span>
-                Booked
-              </span>
-
-              <h2>
-                {bookedAppointments}
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div className="stat-card">
-
-            <div className="stat-icon">
-              ✓
-            </div>
-
-            <div>
-
-              <span>
-                Confirmed
-              </span>
-
-              <h2>
-                {confirmedAppointments}
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          <div className="stat-card">
-
-            <div className="stat-icon">
-              ✕
-            </div>
-
-            <div>
-
-              <span>
-                Cancelled
-              </span>
-
-              <h2>
-                {cancelledAppointments}
-              </h2>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* =========================
-            APPOINTMENTS
-        ========================= */}
-
-        <section className="appointments-section">
-
-          <div className="section-header">
-
-            <div>
-
-              <h2>
-                Recent Appointments
-              </h2>
-
-              <p>
-                Your scheduled patient appointments
               </p>
 
             </div>
 
-          </div>
 
+            <div className="doctor-welcome-summary">
 
-          {appointments.length === 0 ? (
-
-            <div className="empty-appointments">
-
-              <div>
+              <div className="doctor-summary-icon">
                 📅
               </div>
 
-              <h3>
-                No appointments yet
-              </h3>
+              <div>
 
-              <p>
-                New patient appointments will
-                appear here.
-              </p>
+                <span>
+                  Pending Requests
+                </span>
+
+                <strong>
+                  {bookedAppointments}
+                </strong>
+
+              </div>
 
             </div>
 
-          ) : (
-
-            <div className="appointment-table-container">
-
-              <table className="appointment-table">
-
-                <thead>
-
-                  <tr>
-
-                    <th>
-                      Appointment
-                    </th>
-
-                    <th>
-                      Patient ID
-                    </th>
-
-                    <th>
-                      Date
-                    </th>
-
-                    <th>
-                      Time
-                    </th>
-
-                    <th>
-                      Status
-                    </th>
-                    <th>
-                      Actions
-                    </th>
-
-                  </tr>
-
-                </thead>
+          </section>
 
 
-                <tbody>
+          {/* =========================
+              STATISTICS
+          ========================= */}
+
+          <section className="doctor-stats-grid">
+
+
+            <div className="doctor-stat-card">
+
+              <div className="doctor-stat-icon total">
+                📅
+              </div>
+
+              <div>
+
+                <p>
+                  Total Appointments
+                </p>
+
+                <h3>
+                  {totalAppointments}
+                </h3>
+
+                <span>
+                  All patient bookings
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="doctor-stat-card">
+
+              <div className="doctor-stat-icon pending">
+                ⏳
+              </div>
+
+              <div>
+
+                <p>
+                  Awaiting Response
+                </p>
+
+                <h3>
+                  {bookedAppointments}
+                </h3>
+
+                <span>
+                  Requires your action
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="doctor-stat-card">
+
+              <div className="doctor-stat-icon confirmed">
+                ✓
+              </div>
+
+              <div>
+
+                <p>
+                  Confirmed
+                </p>
+
+                <h3>
+                  {confirmedAppointments}
+                </h3>
+
+                <span>
+                  Approved appointments
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="doctor-stat-card">
+
+              <div className="doctor-stat-icon cancelled">
+                ✕
+              </div>
+
+              <div>
+
+                <p>
+                  Cancelled
+                </p>
+
+                <h3>
+                  {cancelledAppointments}
+                </h3>
+
+                <span>
+                  Cancelled appointments
+                </span>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          {/* =========================
+              APPOINTMENTS SECTION
+          ========================= */}
+
+          <section className="doctor-appointments-section">
+
+
+            <div className="doctor-section-header">
+
+              <div>
+
+                <p className="doctor-section-label">
+                  APPOINTMENT MANAGEMENT
+                </p>
+
+                <h2>
+                  Patient Appointments
+                </h2>
+
+                <p>
+                  Review and manage your
+                  upcoming patient appointments.
+                </p>
+
+              </div>
+
+
+              <button
+                className="doctor-refresh-button"
+                onClick={loadAppointments}
+              >
+                ↻ Refresh
+              </button>
+
+            </div>
+
+
+            {/* LOADING */}
+
+            {loading && (
+
+              <div className="doctor-loading">
+
+                <div className="doctor-spinner"></div>
+
+                <p>
+                  Loading appointments...
+                </p>
+
+              </div>
+
+            )}
+
+
+            {/* EMPTY STATE */}
+
+            {!loading &&
+              appointments.length === 0 && (
+
+                <div className="doctor-empty-state">
+
+                  <div className="doctor-empty-icon">
+                    📅
+                  </div>
+
+                  <h3>
+                    No appointments yet
+                  </h3>
+
+                  <p>
+                    New patient appointment
+                    requests will appear here.
+                  </p>
+
+                </div>
+
+              )}
+
+
+            {/* APPOINTMENT CARDS */}
+
+            {!loading &&
+              appointments.length > 0 && (
+
+                <div className="doctor-appointment-list">
 
                   {appointments.map(
                     (appointment) => (
 
-                      <tr
+                      <div
+                        className="doctor-appointment-card"
                         key={
                           appointment.appointmentId
                         }
                       >
 
-                        <td>
-                          <strong>
-                            #
-                            {
-                              appointment.appointmentId
-                            }
-                          </strong>
-                        </td>
 
-                        <td>
-                          Patient #
-                          {
-                            appointment.patientId
-                          }
-                        </td>
+                        {/* PATIENT */}
 
-                        <td>
-                          {
-                            appointment.appointmentDate
-                          }
-                        </td>
+                        <div className="doctor-patient-column">
 
-                        <td>
-                          {
-                            appointment.appointmentTime
-                          }
-                        </td>
+                          <div className="doctor-patient-avatar">
 
-                        <td>
+                            {(
+                              patientNames[
+                                appointment.patientId
+                              ] || "P"
+                            )
+                              .charAt(0)
+                              .toUpperCase()}
 
-                          <span
-                            className={`status-badge ${appointment.status?.toLowerCase()}`}
-                          >
-                            {appointment.status}
+                          </div>
+
+
+                          <div>
+
+                            <h3>
+
+                              {
+                                patientNames[
+                                  appointment.patientId
+                                ] || "Patient"
+                              }
+
+                            </h3>
+
+                            <p>
+                              Patient Appointment
+                            </p>
+
+                          </div>
+
+                        </div>
+
+
+                        {/* DATE */}
+
+                        <div className="doctor-appointment-detail">
+
+                          <span>
+                            DATE
                           </span>
 
-                        </td>
-                        <td>
+                          <strong>
+                            📅{" "}
+                            {
+                              appointment.appointmentDate
+                            }
+                          </strong>
 
-  {appointment.status === "Booked" && (
+                        </div>
 
-    <div className="appointment-actions">
 
-      <button
-        className="confirm-btn"
-        onClick={() =>
-          updateAppointmentStatus(
-            appointment.appointmentId,
-            "Confirmed"
-          )
-        }
-      >
-        Confirm
-      </button>
+                        {/* TIME */}
 
-      <button
-        className="cancel-btn"
-        onClick={() =>
-          updateAppointmentStatus(
-            appointment.appointmentId,
-            "Cancelled"
-          )
-        }
-      >
-        Cancel
-      </button>
+                        <div className="doctor-appointment-detail">
 
-    </div>
+                          <span>
+                            TIME
+                          </span>
 
-  )}
+                          <strong>
+                            🕐{" "}
+                            {
+                              appointment.appointmentTime
+                            }
+                          </strong>
 
-</td>
+                        </div>
 
-                      </tr>
+
+                        {/* STATUS */}
+
+                        <div className="doctor-appointment-detail">
+
+                          <span>
+                            STATUS
+                          </span>
+
+                          <div>
+
+                            <span
+                              className={getStatusClass(
+                                appointment.status
+                              )}
+                            >
+                              {appointment.status}
+                            </span>
+
+                          </div>
+
+                        </div>
+
+
+                        {/* ACTIONS */}
+
+                        <div className="doctor-card-actions">
+
+                          {appointment.status ===
+                            "Booked" && (
+
+                            <>
+
+                              <button
+                                className="doctor-confirm-button"
+                                onClick={() =>
+                                  updateAppointmentStatus(
+                                    appointment.appointmentId,
+                                    "Confirmed"
+                                  )
+                                }
+                              >
+                                ✓ Confirm
+                              </button>
+
+
+                              <button
+                                className="doctor-cancel-button"
+                                onClick={() =>
+                                  updateAppointmentStatus(
+                                    appointment.appointmentId,
+                                    "Cancelled"
+                                  )
+                                }
+                              >
+                                Cancel
+                              </button>
+
+                            </>
+
+                          )}
+
+
+                          {appointment.status ===
+                            "Confirmed" && (
+
+                            <button
+                              className="doctor-confirmed-button"
+                              disabled
+                            >
+                              ✓ Confirmed
+                            </button>
+
+                          )}
+
+
+                          {appointment.status ===
+                            "Cancelled" && (
+
+                            <button
+                              className="doctor-cancelled-button"
+                              disabled
+                            >
+                              Cancelled
+                            </button>
+
+                          )}
+
+                        </div>
+
+                      </div>
 
                     )
                   )}
 
-                </tbody>
+                </div>
 
-              </table>
+              )}
 
-            </div>
+          </section>
 
-          )}
+        </main>
 
-        </section>
-
-      </main>
+      </div>
 
     </div>
   );
