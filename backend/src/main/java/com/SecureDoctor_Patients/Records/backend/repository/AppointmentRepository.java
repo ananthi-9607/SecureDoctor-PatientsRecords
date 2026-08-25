@@ -19,6 +19,10 @@ public interface AppointmentRepository
             LocalDate appointmentDate,
             LocalTime appointmentTime
     );
+
     // Get all appointments for a doctor
     List<Appointment> findByDoctorId(Long doctorId);
+
+    // Get all appointments for a patient
+    List<Appointment> findByPatientId(Long patientId);
 }

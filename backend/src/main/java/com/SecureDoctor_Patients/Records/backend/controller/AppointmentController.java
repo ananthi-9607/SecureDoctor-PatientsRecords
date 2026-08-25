@@ -73,6 +73,18 @@ public ResponseEntity<List<Appointment>> getAppointmentsByDoctor(
             appointmentService.getAppointmentsByDoctor(doctorId)
     );
 }
+// =========================
+// GET APPOINTMENTS BY PATIENT
+// =========================
+
+@GetMapping("/patient/{patientId}")
+public ResponseEntity<List<Appointment>> getAppointmentsByPatient(
+        @PathVariable Long patientId) {
+
+    return ResponseEntity.ok(
+            appointmentService.getAppointmentsByPatient(patientId)
+    );
+}
 
     // UPDATE APPOINTMENT
     @PutMapping("/{id}")

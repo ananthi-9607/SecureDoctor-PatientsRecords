@@ -1,35 +1,74 @@
 import { useState } from "react";
+
 import "./App.css";
-import Appointment from "./Appointment";
+
 import DoctorDashboard from "./DoctorDashboard";
+import MyAppointments from "./MyAppointments";
+import AvailableSlots from "./AvailableSlots";
 
 function App() {
 
-  const [isRegister, setIsRegister] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // ==================================================
+  // LOGIN / REGISTER STATE
+  // ==================================================
 
-  // Logged-in user details
-  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [isRegister, setIsRegister] =
+    useState(false);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("Patient");
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(false);
 
 
-  // =========================
+  // ==================================================
+  // LOGGED-IN USER
+  // ==================================================
+
+  const [loggedInUser, setLoggedInUser] =
+    useState(null);
+
+
+  // ==================================================
+  // FORM STATES
+  // ==================================================
+
+  const [fullName, setFullName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [phone, setPhone] =
+    useState("");
+
+  const [role, setRole] =
+    useState("Patient");
+
+
+  // ==================================================
+  // PATIENT PAGE NAVIGATION
+  // true  = MyAppointments
+  // false = AvailableSlots
+  // ==================================================
+
+  const [showAppointments, setShowAppointments] =
+    useState(true);
+
+
+  // ==================================================
   // REGISTER / LOGIN
-  // =========================
+  // ==================================================
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
 
 
-    // =========================
+    // ==================================================
     // REGISTRATION
-    // =========================
+    // ==================================================
 
     if (isRegister) {
 
@@ -57,27 +96,35 @@ function App() {
 
         if (response.ok) {
 
-          const data = await response.json();
+          const data =
+            await response.json();
 
           console.log(
             "Registration successful:",
             data
           );
 
+
           alert(
-            "Registration successful!"
+            "Registration successful! Please login."
           );
 
 
           // Clear fields
+
           setFullName("");
+
           setEmail("");
+
           setPassword("");
+
           setPhone("");
+
           setRole("Patient");
 
 
-          // Go back to Login
+          // Go to login page
+
           setIsRegister(false);
 
         } else {
@@ -94,8 +141,8 @@ function App() {
             errorText ||
             "Registration failed!"
           );
-        }
 
+        }
 
       } catch (error) {
 
@@ -107,14 +154,17 @@ function App() {
         alert(
           "Backend connection failed!"
         );
+
       }
 
+    }
 
-    // =========================
+
+    // ==================================================
     // LOGIN
-    // =========================
+    // ==================================================
 
-    } else {
+    else {
 
       try {
 
@@ -135,13 +185,12 @@ function App() {
         );
 
 
-        // =========================
+        // ==================================================
         // LOGIN SUCCESS
-        // =========================
+        // ==================================================
 
         if (response.ok) {
 
-          // Backend now returns User object
           const userData =
             await response.json();
 
@@ -151,20 +200,24 @@ function App() {
             userData
           );
 
+
           console.log(
             "USER ID:",
             userData.userId
           );
+
 
           console.log(
             "USER NAME:",
             userData.fullName
           );
 
+
           console.log(
             "USER EMAIL:",
             userData.email
           );
+
 
           console.log(
             "USER ROLE:",
@@ -173,17 +226,35 @@ function App() {
 
 
           // Store logged-in user
-          setLoggedInUser(userData);
+
+          setLoggedInUser(
+            userData
+          );
+
+
+          // Login success
 
           setIsLoggedIn(true);
+
+
+          // Patient should start
+          // from MyAppointments
+
+          setShowAppointments(true);
 
 
           alert(
             "Login successful!"
           );
 
+        }
 
-        } else {
+
+        // ==================================================
+        // LOGIN FAILED
+        // ==================================================
+
+        else {
 
           const errorText =
             await response.text();
@@ -196,8 +267,8 @@ function App() {
           alert(
             "Invalid email or password"
           );
-        }
 
+        }
 
       } catch (error) {
 
@@ -209,70 +280,195 @@ function App() {
         alert(
           "Backend connection failed!"
         );
+
       }
+
     }
+
   };
 
 
-  // =========================
+  // ==================================================
+  // LOGOUT
+  // ==================================================
+
+  const handleLogout = () => {
+
+    setIsLoggedIn(false);
+
+    setLoggedInUser(null);
+
+    setEmail("");
+
+    setPassword("");
+
+    setShowAppointments(true);
+
+  };
+
+
+  // ==================================================
   // AFTER LOGIN
-  // =========================
-if (isLoggedIn && loggedInUser) {
+  // ==================================================
 
-  const userId =
-    loggedInUser.userId ??
-    loggedInUser.user_id ??
-    loggedInUser.id;
-
-  // Doctor
   if (
-    loggedInUser.role &&
-    loggedInUser.role.toLowerCase() === "doctor"
+    isLoggedIn &&
+    loggedInUser
   ) {
 
+    // Get user ID safely
+
+    const userId =
+      loggedInUser.userId ??
+      loggedInUser.user_id ??
+      loggedInUser.id;
+
+
+    // ==================================================
+    // DOCTOR DASHBOARD
+    // ==================================================
+
+    if (
+      loggedInUser.role &&
+      loggedInUser.role.toLowerCase() ===
+        "doctor"
+    ) {
+
+      return (
+
+        <DoctorDashboard
+
+          doctorId={userId}
+
+          doctorName={
+            loggedInUser.fullName
+          }
+
+          onLogout={
+            handleLogout
+          }
+
+        />
+
+      );
+
+    }
+
+
+    // ==================================================
+    // PATIENT DASHBOARD
+    // ==================================================
+
+    if (showAppointments) {
+
+      return (
+
+        <MyAppointments
+
+          patientId={userId}
+
+          patientName={
+            loggedInUser.fullName
+          }
+
+
+          // Book Appointment click
+
+          onBookAppointment={() =>
+            setShowAppointments(false)
+          }
+
+
+          // Logout
+
+          onLogout={
+            handleLogout
+          }
+
+        />
+
+      );
+
+    }
+
+
+    // ==================================================
+    // AVAILABLE SLOTS PAGE
+    // ==================================================
+
     return (
-      <DoctorDashboard
-        doctorId={userId}
-        doctorName={loggedInUser.fullName}
+
+      <AvailableSlots
+
+        patientId={userId}
+
+
+        // Back button
+
+        onBack={() =>
+          setShowAppointments(true)
+        }
+
+
+        // After successful booking
+
+        onBookingSuccess={() =>
+          setShowAppointments(true)
+        }
+
       />
+
     );
+
   }
 
-  // Patient
-  return (
-    <Appointment
-      patientId={userId}
-      patientName={loggedInUser.fullName}
-    />
-  );
-}
-  // =========================
+
+  // ==================================================
   // LOGIN / REGISTER PAGE
-  // =========================
+  // ==================================================
 
   return (
 
     <div className="login-page">
 
+
       <div className="login-card">
+
+
+        {/* =========================
+            BRAND
+        ========================= */}
 
         <h1>
           SecureDoctor
         </h1>
+
 
         <p className="subtitle">
           Secure Doctor-Patient Records
         </p>
 
 
+        {/* =========================
+            TITLE
+        ========================= */}
+
         <h2>
+
           {isRegister
             ? "Create Account"
             : "Login"}
+
         </h2>
 
 
-        <form onSubmit={handleSubmit}>
+        {/* =========================
+            FORM
+        ========================= */}
+
+        <form
+          onSubmit={handleSubmit}
+        >
 
 
           {/* =========================
@@ -292,12 +488,15 @@ if (isLoggedIn && loggedInUser) {
                 placeholder="Enter your full name"
                 value={fullName}
                 onChange={(e) =>
-                  setFullName(e.target.value)
+                  setFullName(
+                    e.target.value
+                  )
                 }
                 required
               />
 
             </div>
+
           )}
 
 
@@ -318,12 +517,15 @@ if (isLoggedIn && loggedInUser) {
                 placeholder="Enter your phone number"
                 value={phone}
                 onChange={(e) =>
-                  setPhone(e.target.value)
+                  setPhone(
+                    e.target.value
+                  )
                 }
                 required
               />
 
             </div>
+
           )}
 
 
@@ -342,7 +544,9 @@ if (isLoggedIn && loggedInUser) {
               <select
                 value={role}
                 onChange={(e) =>
-                  setRole(e.target.value)
+                  setRole(
+                    e.target.value
+                  )
                 }
               >
 
@@ -357,6 +561,7 @@ if (isLoggedIn && loggedInUser) {
               </select>
 
             </div>
+
           )}
 
 
@@ -375,7 +580,9 @@ if (isLoggedIn && loggedInUser) {
               placeholder="Enter your email"
               value={email}
               onChange={(e) =>
-                setEmail(e.target.value)
+                setEmail(
+                  e.target.value
+                )
               }
               required
             />
@@ -398,7 +605,9 @@ if (isLoggedIn && loggedInUser) {
               placeholder="Enter your password"
               value={password}
               onChange={(e) =>
-                setPassword(e.target.value)
+                setPassword(
+                  e.target.value
+                )
               }
               required
             />
@@ -410,7 +619,9 @@ if (isLoggedIn && loggedInUser) {
               SUBMIT BUTTON
           ========================= */}
 
-          <button type="submit">
+          <button
+            type="submit"
+          >
 
             {isRegister
               ? "Register"
@@ -431,9 +642,12 @@ if (isLoggedIn && loggedInUser) {
             ? "Already have an account?"
             : "Don't have an account?"}
 
+
           <span
             onClick={() =>
-              setIsRegister(!isRegister)
+              setIsRegister(
+                !isRegister
+              )
             }
           >
 
@@ -445,11 +659,14 @@ if (isLoggedIn && loggedInUser) {
 
         </p>
 
+
       </div>
 
+
     </div>
+
   );
-  
+
 }
 
 export default App;

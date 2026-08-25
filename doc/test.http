@@ -32,6 +32,17 @@ Content-Type: application/json
 ### Delete User
 DELETE http://localhost:8080/users/5
 
+### ADD DOCTOR AVAILABILITY
+
+POST http://localhost:8080/availability
+Content-Type: application/json
+
+{
+  "doctorId": 1,
+  "availableDate": "2026-08-20",
+  "availableTime": "10:00:00"
+}
+
 
 
 
@@ -82,3 +93,20 @@ Content-Type: application/json
 }
 ###
 DELETE http://localhost:8080/appointments/3
+
+
+
+### ADD DOCTOR AVAILABILITY
+
+POST http://localhost:8080/availability
+Content-Type: application/json
+
+{
+  "doctorId": 19,
+  "availableDate": "2026-08-20",
+  "availableTime": "10:00:00"
+}
+
+### GET ALL AVAILABILITY OF DOCTOR
+
+GET http://localhost:8080/availability/doctor/19

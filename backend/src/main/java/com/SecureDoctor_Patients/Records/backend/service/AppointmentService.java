@@ -290,6 +290,15 @@ public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
     return appointmentRepository.findByDoctorId(doctorId);
 }
 
+// =========================
+// GET APPOINTMENTS BY PATIENT
+// =========================
+
+@Transactional(readOnly = true)
+public List<Appointment> getAppointmentsByPatient(Long patientId) {
+
+    return appointmentRepository.findByPatientId(patientId);
+}
 
     // =========================
     // DELETE APPOINTMENT

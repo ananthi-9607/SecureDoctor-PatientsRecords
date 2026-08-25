@@ -2,17 +2,30 @@ import { useEffect, useState } from "react";
 import "./DoctorDashboard.css";
 
 function DoctorDashboard({ doctorId, doctorName }) {
+
   const [appointments, setAppointments] = useState([]);
   const [patientNames, setPatientNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
 
   // =========================
+  // AVAILABILITY STATES
+  // =========================
+
+  const [availability, setAvailability] = useState([]);
+  const [availabilityDate, setAvailabilityDate] = useState("");
+  const [availabilityTime, setAvailabilityTime] = useState("");
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+
+  // =========================
   // LOAD DOCTOR APPOINTMENTS
   // =========================
 
   const loadAppointments = async () => {
+
     try {
+
       setLoading(true);
 
       const response = await fetch(
@@ -26,6 +39,7 @@ function DoctorDashboard({ doctorId, doctorName }) {
       const data = await response.json();
 
       setAppointments(data);
+
 
       // =========================
       // LOAD PATIENT NAMES
@@ -42,31 +56,41 @@ function DoctorDashboard({ doctorId, doctorName }) {
       const patientData = {};
 
       await Promise.all(
+
         uniquePatientIds.map(async (patientId) => {
+
           try {
+
             const patientResponse = await fetch(
               `http://localhost:8080/users/${patientId}`
             );
 
             if (patientResponse.ok) {
-              const patient = await patientResponse.json();
+
+              const patient =
+                await patientResponse.json();
 
               patientData[patientId] =
                 patient.fullName || "Patient";
             }
+
           } catch (error) {
+
             console.error(
               "Unable to load patient:",
               patientId,
               error
             );
           }
+
         })
+
       );
 
       setPatientNames(patientData);
 
     } catch (error) {
+
       console.error(
         "Error loading appointments:",
         error
@@ -75,16 +99,196 @@ function DoctorDashboard({ doctorId, doctorName }) {
       alert("Unable to load appointments.");
 
     } finally {
+
       setLoading(false);
     }
   };
 
 
-  useEffect(() => {
-    if (doctorId) {
-      loadAppointments();
+  // =========================
+  // LOAD DOCTOR AVAILABILITY
+  // =========================
+
+  const loadAvailability = async () => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/availability/doctor/${doctorId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to load availability");
+      }
+
+      const data = await response.json();
+
+      setAvailability(data);
+
+    } catch (error) {
+
+      console.error(
+        "Error loading availability:",
+        error
+      );
     }
+  };
+
+
+  // =========================
+  // LOAD DATA
+  // =========================
+
+  useEffect(() => {
+
+    if (doctorId) {
+
+      loadAppointments();
+      loadAvailability();
+
+    }
+
   }, [doctorId]);
+
+
+  // =========================
+  // ADD AVAILABILITY SLOT
+  // =========================
+
+  const addAvailabilitySlot = async (e) => {
+
+    e.preventDefault();
+
+    if (!availabilityDate || !availabilityTime) {
+
+      alert("Please select date and time.");
+
+      return;
+    }
+
+    try {
+
+      setAvailabilityLoading(true);
+
+      const response = await fetch(
+        "http://localhost:8080/availability",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            doctorId: doctorId,
+            availableDate: availabilityDate,
+            availableTime: availabilityTime,
+          }),
+        }
+      );
+
+      if (response.ok) {
+
+        const newSlot =
+          await response.json();
+
+        setAvailability((previousSlots) => [
+          ...previousSlots,
+          newSlot,
+        ]);
+
+        setAvailabilityDate("");
+        setAvailabilityTime("");
+
+        alert(
+          "Availability slot added successfully!"
+        );
+
+      } else {
+
+        const errorText =
+          await response.text();
+
+        alert(
+          errorText ||
+          "Unable to add availability slot."
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Availability error:",
+        error
+      );
+
+      alert("Backend connection failed!");
+
+    } finally {
+
+      setAvailabilityLoading(false);
+    }
+  };
+
+
+  // =========================
+  // DELETE AVAILABILITY SLOT
+  // =========================
+
+  const deleteAvailabilitySlot = async (id) => {
+
+    const confirmDelete =
+      window.confirm(
+        "Do you want to remove this availability slot?"
+      );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/availability/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+
+        setAvailability((previousSlots) =>
+          previousSlots.filter(
+            (slot) =>
+              slot.availabilityId !== id
+          )
+        );
+
+        alert(
+          "Availability slot removed successfully!"
+        );
+
+      } else {
+
+        const errorText =
+          await response.text();
+
+        alert(
+          errorText ||
+          "Unable to delete availability slot."
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Delete availability error:",
+        error
+      );
+
+      alert("Backend connection failed!");
+    }
+  };
 
 
   // =========================
@@ -117,6 +321,10 @@ function DoctorDashboard({ doctorId, doctorName }) {
                 ? updatedAppointment
                 : appointment
           )
+        );
+
+        alert(
+          `Appointment ${newStatus.toLowerCase()} successfully!`
         );
 
       } else {
@@ -169,9 +377,15 @@ function DoctorDashboard({ doctorId, doctorName }) {
         appointment.status === "Cancelled"
     ).length;
 
+  const activeSlots =
+    availability.filter(
+      (slot) =>
+        slot.isAvailable === true
+    ).length;
+
 
   // =========================
-  // GET STATUS CLASS
+  // STATUS CLASS
   // =========================
 
   const getStatusClass = (status) => {
@@ -185,6 +399,57 @@ function DoctorDashboard({ doctorId, doctorName }) {
     }
 
     return "doctor-status doctor-booked";
+  };
+
+
+  // =========================
+  // FORMAT DATE
+  // =========================
+
+  const formatDate = (date) => {
+
+    if (!date) {
+      return "";
+    }
+
+    return new Date(
+      `${date}T00:00:00`
+    ).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
+  };
+
+
+  // =========================
+  // FORMAT TIME
+  // =========================
+
+  const formatTime = (time) => {
+
+    if (!time) {
+      return "";
+    }
+
+    const [hours, minutes] =
+      time.split(":");
+
+    const hour =
+      Number(hours);
+
+    const amPm =
+      hour >= 12
+        ? "PM"
+        : "AM";
+
+    const formattedHour =
+      hour % 12 || 12;
+
+    return `${formattedHour}:${minutes} ${amPm}`;
   };
 
 
@@ -205,8 +470,15 @@ function DoctorDashboard({ doctorId, doctorName }) {
           </div>
 
           <div>
-            <h1>SecureDoctor</h1>
-            <p>Doctor Portal</p>
+
+            <h1>
+              SecureDoctor
+            </h1>
+
+            <p>
+              Doctor Portal
+            </p>
+
           </div>
 
         </div>
@@ -217,6 +489,7 @@ function DoctorDashboard({ doctorId, doctorName }) {
           <p className="doctor-nav-title">
             MAIN MENU
           </p>
+
 
           <button className="doctor-nav-item active">
 
@@ -255,6 +528,17 @@ function DoctorDashboard({ doctorId, doctorName }) {
             </span>
 
             Patients
+
+          </button>
+
+
+          <button className="doctor-nav-item">
+
+            <span className="doctor-nav-icon">
+              ◷
+            </span>
+
+            Availability
 
           </button>
 
@@ -317,6 +601,7 @@ function DoctorDashboard({ doctorId, doctorName }) {
           <div className="doctor-top-actions">
 
             <button className="doctor-notification">
+
               🔔
 
               {bookedAppointments > 0 && (
@@ -338,7 +623,9 @@ function DoctorDashboard({ doctorId, doctorName }) {
                 <div className="doctor-avatar">
 
                   {doctorName
-                    ? doctorName.charAt(0).toUpperCase()
+                    ? doctorName
+                        .charAt(0)
+                        .toUpperCase()
                     : "D"}
 
                 </div>
@@ -372,10 +659,13 @@ function DoctorDashboard({ doctorId, doctorName }) {
                     <div className="doctor-avatar large">
 
                       {doctorName
-                        ? doctorName.charAt(0).toUpperCase()
+                        ? doctorName
+                            .charAt(0)
+                            .toUpperCase()
                         : "D"}
 
                     </div>
+
 
                     <div>
 
@@ -430,7 +720,9 @@ function DoctorDashboard({ doctorId, doctorName }) {
         <main className="doctor-dashboard-content">
 
 
-          {/* WELCOME SECTION */}
+          {/* =========================
+              WELCOME
+          ========================= */}
 
           <section className="doctor-welcome-section">
 
@@ -441,15 +733,14 @@ function DoctorDashboard({ doctorId, doctorName }) {
               </p>
 
               <h1>
-                Welcome back, Dr. {doctorName || "Doctor"} 👋
+                Welcome back, Dr.{" "}
+                {doctorName || "Doctor"} 👋
               </h1>
 
               <p className="doctor-welcome-text">
-
-                Manage your appointments and
-                patient requests securely from
-                one place.
-
+                Manage appointments, patients and
+                consultation availability securely
+                from one place.
               </p>
 
             </div>
@@ -562,25 +853,272 @@ function DoctorDashboard({ doctorId, doctorName }) {
 
             <div className="doctor-stat-card">
 
-              <div className="doctor-stat-icon cancelled">
-                ✕
+              <div className="doctor-stat-icon available">
+                ◷
               </div>
 
               <div>
 
                 <p>
-                  Cancelled
+                  Active Slots
                 </p>
 
                 <h3>
-                  {cancelledAppointments}
+                  {activeSlots}
                 </h3>
 
                 <span>
-                  Cancelled appointments
+                  Available for booking
                 </span>
 
               </div>
+
+            </div>
+
+          </section>
+
+
+          {/* =========================
+              AVAILABILITY MANAGEMENT
+          ========================= */}
+
+          <section className="doctor-availability-section">
+
+            <div className="doctor-section-header">
+
+              <div>
+
+                <p className="doctor-section-label">
+                  AVAILABILITY MANAGEMENT
+                </p>
+
+                <h2>
+                  Manage Your Availability
+                </h2>
+
+                <p>
+                  Set consultation slots that
+                  patients can book.
+                </p>
+
+              </div>
+
+
+              <div className="availability-total">
+
+                <span>
+                  Active Slots
+                </span>
+
+                <strong>
+                  {activeSlots}
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            {/* ADD SLOT */}
+
+            <div className="availability-add-card">
+
+              <div className="availability-card-heading">
+
+                <div className="availability-heading-icon">
+                  📅
+                </div>
+
+                <div>
+
+                  <h3>
+                    Add New Availability
+                  </h3>
+
+                  <p>
+                    Choose a date and time for
+                    your next consultation slot.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <form
+                className="availability-form"
+                onSubmit={addAvailabilitySlot}
+              >
+
+                <div className="availability-input-group">
+
+                  <label>
+                    Available Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={availabilityDate}
+                    min={
+                      new Date()
+                        .toISOString()
+                        .split("T")[0]
+                    }
+                    onChange={(e) =>
+                      setAvailabilityDate(
+                        e.target.value
+                      )
+                    }
+                    required
+                  />
+
+                </div>
+
+
+                <div className="availability-input-group">
+
+                  <label>
+                    Available Time
+                  </label>
+
+                  <input
+                    type="time"
+                    value={availabilityTime}
+                    onChange={(e) =>
+                      setAvailabilityTime(
+                        e.target.value
+                      )
+                    }
+                    required
+                  />
+
+                </div>
+
+
+                <button
+                  type="submit"
+                  className="availability-add-button"
+                  disabled={availabilityLoading}
+                >
+
+                  {availabilityLoading
+                    ? "Adding..."
+                    : "+ Add Slot"}
+
+                </button>
+
+              </form>
+
+            </div>
+
+
+            {/* AVAILABILITY LIST */}
+
+            <div className="availability-slots-container">
+
+
+              {availability.length === 0 && (
+
+                <div className="availability-empty-state">
+
+                  <div>
+                    📆
+                  </div>
+
+                  <h3>
+                    No availability slots yet
+                  </h3>
+
+                  <p>
+                    Add your first available
+                    consultation time above.
+                  </p>
+
+                </div>
+
+              )}
+
+
+              {availability.length > 0 && (
+
+                <div className="availability-slots-grid">
+
+                  {availability.map((slot) => (
+
+                    <div
+                      className="availability-slot-card"
+                      key={slot.availabilityId}
+                    >
+
+                      <div className="slot-date-icon">
+                        📅
+                      </div>
+
+
+                      <div className="slot-details">
+
+                        <span>
+                          CONSULTATION SLOT
+                        </span>
+
+                        <h3>
+                          {formatDate(
+                            slot.availableDate
+                          )}
+                        </h3>
+
+                        <p>
+                          🕐{" "}
+                          {formatTime(
+                            slot.availableTime
+                          )}
+                        </p>
+
+                      </div>
+
+
+                      <div className="slot-actions">
+
+                        <span
+                          className={
+                            slot.isAvailable
+                              ? "slot-status active"
+                              : "slot-status booked"
+                          }
+                        >
+
+                          {slot.isAvailable
+                            ? "Available"
+                            : "Booked"}
+
+                        </span>
+
+
+                        {slot.isAvailable && (
+
+                          <button
+                            className="slot-delete-button"
+                            onClick={() =>
+                              deleteAvailabilitySlot(
+                                slot.availabilityId
+                              )
+                            }
+                            title="Delete slot"
+                          >
+                            🗑
+                          </button>
+
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
 
             </div>
 
@@ -592,7 +1130,6 @@ function DoctorDashboard({ doctorId, doctorName }) {
           ========================= */}
 
           <section className="doctor-appointments-section">
-
 
             <div className="doctor-section-header">
 
@@ -607,8 +1144,8 @@ function DoctorDashboard({ doctorId, doctorName }) {
                 </h2>
 
                 <p>
-                  Review and manage your
-                  upcoming patient appointments.
+                  Review and manage your upcoming
+                  patient appointments.
                 </p>
 
               </div>
@@ -616,7 +1153,10 @@ function DoctorDashboard({ doctorId, doctorName }) {
 
               <button
                 className="doctor-refresh-button"
-                onClick={loadAppointments}
+                onClick={() => {
+                  loadAppointments();
+                  loadAvailability();
+                }}
               >
                 ↻ Refresh
               </button>
@@ -657,8 +1197,8 @@ function DoctorDashboard({ doctorId, doctorName }) {
                   </h3>
 
                   <p>
-                    New patient appointment
-                    requests will appear here.
+                    New patient appointment requests
+                    will appear here.
                   </p>
 
                 </div>
@@ -732,9 +1272,9 @@ function DoctorDashboard({ doctorId, doctorName }) {
 
                           <strong>
                             📅{" "}
-                            {
+                            {formatDate(
                               appointment.appointmentDate
-                            }
+                            )}
                           </strong>
 
                         </div>
@@ -750,9 +1290,9 @@ function DoctorDashboard({ doctorId, doctorName }) {
 
                           <strong>
                             🕐{" "}
-                            {
+                            {formatTime(
                               appointment.appointmentTime
-                            }
+                            )}
                           </strong>
 
                         </div>
