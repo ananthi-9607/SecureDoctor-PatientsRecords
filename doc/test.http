@@ -110,3 +110,14 @@ Content-Type: application/json
 ### GET ALL AVAILABILITY OF DOCTOR
 
 GET http://localhost:8080/availability/doctor/19
+
+###
+POST http://localhost:8080/consultations
+Content-Type: application/json
+
+{
+    "appointmentId": 6,
+    "diagnosis": "Viral fever",
+    "encryptedNotes": "Patient has mild fever and body pain",
+    "consultationDate": "2026-08-27"
+}

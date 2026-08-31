@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import "./MyAppointments.css";
 
@@ -6,9 +5,11 @@ function MyAppointments({
   patientId,
   patientName,
   onBookAppointment,
+  onViewConsultations,
 }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [showProfileMenu, setShowProfileMenu] =
     useState(false);
 
@@ -122,6 +123,7 @@ function MyAppointments({
         time.split(":");
 
       const date = new Date();
+
       date.setHours(hours);
       date.setMinutes(minutes);
 
@@ -205,6 +207,8 @@ function MyAppointments({
 
         <nav className="sidebar-nav">
 
+          {/* DASHBOARD */}
+
           <button className="sidebar-item active">
 
             <span className="nav-icon">
@@ -215,6 +219,8 @@ function MyAppointments({
 
           </button>
 
+
+          {/* BOOK APPOINTMENT */}
 
           <button
             className="sidebar-item"
@@ -230,13 +236,18 @@ function MyAppointments({
           </button>
 
 
-          <button className="sidebar-item">
+          {/* MY CONSULTATIONS */}
+
+          <button
+            className="sidebar-item"
+            onClick={onViewConsultations}
+          >
 
             <span className="nav-icon">
-              ♡
+              📋
             </span>
 
-            Health Records
+            My Consultations
 
           </button>
 
@@ -276,9 +287,7 @@ function MyAppointments({
 
       <div className="patient-main">
 
-        {/* =========================
-            HEADER
-        ========================= */}
+        {/* HEADER */}
 
         <header className="patient-header">
 
@@ -418,8 +427,6 @@ function MyAppointments({
                 track appointment status and book
                 appointments with your doctors.
               </p>
-
-              
 
             </div>
 
@@ -605,9 +612,7 @@ function MyAppointments({
             </div>
 
 
-            {/* =========================
-                LOADING
-            ========================= */}
+            {/* LOADING */}
 
             {loading && (
 
@@ -633,9 +638,7 @@ function MyAppointments({
             )}
 
 
-            {/* =========================
-                NO APPOINTMENTS
-            ========================= */}
+            {/* NO APPOINTMENTS */}
 
             {!loading &&
               appointments.length === 0 && (
@@ -670,9 +673,7 @@ function MyAppointments({
               )}
 
 
-            {/* =========================
-                APPOINTMENT LIST
-            ========================= */}
+            {/* APPOINTMENT LIST */}
 
             {!loading &&
               appointments.length > 0 && (

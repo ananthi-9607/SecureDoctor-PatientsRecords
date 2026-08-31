@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./DoctorDashboard.css";
+import ConsultationForm from "./ConsultationForm";
 
 function DoctorDashboard({
   doctorId,
@@ -14,6 +15,15 @@ function DoctorDashboard({
   const [activeMenu, setActiveMenu] =
     useState("dashboard");
 
+  // =========================
+  // CONSULTATION STATES
+  // =========================
+
+  const [selectedAppointment, setSelectedAppointment] =
+    useState(null);
+
+  const [showConsultationForm, setShowConsultationForm] =
+    useState(false);
 
   // =========================
   // APPOINTMENT STATES
@@ -28,14 +38,12 @@ function DoctorDashboard({
   const [loading, setLoading] =
     useState(true);
 
-
   // =========================
   // PROFILE STATE
   // =========================
 
   const [profileOpen, setProfileOpen] =
     useState(false);
-
 
   // =========================
   // AVAILABILITY STATES
@@ -52,7 +60,6 @@ function DoctorDashboard({
 
   const [availabilityLoading, setAvailabilityLoading] =
     useState(false);
-
 
   // =========================
   // LOAD APPOINTMENTS
@@ -83,10 +90,7 @@ function DoctorDashboard({
 
       setAppointments(data);
 
-
-      // =========================
       // GET UNIQUE PATIENT IDS
-      // =========================
 
       const uniquePatientIds = [
         ...new Set(
@@ -99,10 +103,7 @@ function DoctorDashboard({
         )
       ];
 
-
-      // =========================
       // LOAD PATIENT NAMES
-      // =========================
 
       const patientData = {};
 
@@ -126,7 +127,6 @@ function DoctorDashboard({
                 patientData[patientId] =
                   patient.fullName ||
                   "Patient";
-
               }
 
             } catch (error) {
@@ -164,7 +164,6 @@ function DoctorDashboard({
     }
 
   };
-
 
   // =========================
   // LOAD AVAILABILITY
@@ -207,7 +206,6 @@ function DoctorDashboard({
 
   };
 
-
   // =========================
   // LOAD DATA
   // =========================
@@ -223,7 +221,6 @@ function DoctorDashboard({
     }
 
   }, [doctorId]);
-
 
   // =========================
   // ADD AVAILABILITY SLOT
@@ -279,7 +276,6 @@ function DoctorDashboard({
             }
           );
 
-
         if (response.ok) {
 
           const newSlot =
@@ -330,7 +326,6 @@ function DoctorDashboard({
       }
 
     };
-
 
   // =========================
   // DELETE AVAILABILITY SLOT
@@ -399,7 +394,6 @@ function DoctorDashboard({
 
     };
 
-
   // =========================
   // UPDATE APPOINTMENT STATUS
   // =========================
@@ -467,7 +461,6 @@ function DoctorDashboard({
 
     };
 
-
   // =========================
   // DASHBOARD COUNTS
   // =========================
@@ -475,13 +468,11 @@ function DoctorDashboard({
   const totalAppointments =
     appointments.length;
 
-
   const bookedAppointments =
     appointments.filter(
       (appointment) =>
         appointment.status === "Booked"
     ).length;
-
 
   const confirmedAppointments =
     appointments.filter(
@@ -489,20 +480,17 @@ function DoctorDashboard({
         appointment.status === "Confirmed"
     ).length;
 
-
   const cancelledAppointments =
     appointments.filter(
       (appointment) =>
         appointment.status === "Cancelled"
     ).length;
 
-
   const activeSlots =
     availability.filter(
       (slot) =>
         slot.isAvailable === true
     ).length;
-
 
   // =========================
   // UNIQUE PATIENTS
@@ -518,7 +506,6 @@ function DoctorDashboard({
         .filter(Boolean)
     )
   ];
-
 
   // =========================
   // STATUS CLASS
@@ -552,7 +539,6 @@ function DoctorDashboard({
 
     };
 
-
   // =========================
   // FORMAT DATE
   // =========================
@@ -576,7 +562,6 @@ function DoctorDashboard({
       );
 
     };
-
 
   // =========================
   // FORMAT TIME
@@ -612,7 +597,6 @@ function DoctorDashboard({
 
     };
 
-
   // =========================
   // CHANGE PAGE
   // =========================
@@ -625,7 +609,6 @@ function DoctorDashboard({
       setProfileOpen(false);
 
     };
-
 
   // =========================
   // PAGE TITLE
@@ -664,20 +647,62 @@ function DoctorDashboard({
 
   };
 
+  // =========================
+  // CONSULTATION PAGE
+  // =========================
+
+  if (
+    showConsultationForm &&
+    selectedAppointment
+  ) {
+
+    return (
+
+      <ConsultationForm
+
+        appointment={
+          selectedAppointment
+        }
+
+        onBack={() => {
+
+          setShowConsultationForm(false);
+
+          setSelectedAppointment(null);
+
+        }}
+
+        onConsultationSaved={() => {
+
+          alert(
+            "Consultation saved successfully!"
+          );
+
+          setShowConsultationForm(false);
+
+          setSelectedAppointment(null);
+
+          loadAppointments();
+
+        }}
+
+      />
+
+    );
+
+  }
+
+  // =========================
+  // MAIN RETURN
+  // =========================
 
   return (
 
     <div className="doctor-dashboard-page">
 
-
-      {/* =========================
-          SIDEBAR
-      ========================= */}
+      {/* SIDEBAR */}
 
       <aside className="doctor-sidebar">
-
-
-        {/* BRAND */}
 
         <div className="doctor-sidebar-brand">
 
@@ -699,7 +724,6 @@ function DoctorDashboard({
 
         </div>
 
-
         {/* NAVIGATION */}
 
         <div className="doctor-nav-section">
@@ -707,9 +731,6 @@ function DoctorDashboard({
           <p className="doctor-nav-title">
             MAIN MENU
           </p>
-
-
-          {/* DASHBOARD */}
 
           <button
             className={`doctor-nav-item ${
@@ -732,9 +753,6 @@ function DoctorDashboard({
             Dashboard
 
           </button>
-
-
-          {/* APPOINTMENTS */}
 
           <button
             className={`doctor-nav-item ${
@@ -766,9 +784,6 @@ function DoctorDashboard({
 
           </button>
 
-
-          {/* PATIENTS */}
-
           <button
             className={`doctor-nav-item ${
               activeMenu ===
@@ -790,9 +805,6 @@ function DoctorDashboard({
             Patients
 
           </button>
-
-
-          {/* AVAILABILITY */}
 
           <button
             className={`doctor-nav-item ${
@@ -817,9 +829,6 @@ function DoctorDashboard({
           </button>
 
         </div>
-
-
-        {/* SIDEBAR FOOTER */}
 
         <div className="doctor-sidebar-footer">
 
@@ -847,13 +856,9 @@ function DoctorDashboard({
 
       </aside>
 
-
-      {/* =========================
-          MAIN AREA
-      ========================= */}
+      {/* MAIN AREA */}
 
       <div className="doctor-main-area">
-
 
         {/* TOP HEADER */}
 
@@ -870,7 +875,6 @@ function DoctorDashboard({
             </h2>
 
           </div>
-
 
           <div className="doctor-top-actions">
 
@@ -893,7 +897,6 @@ function DoctorDashboard({
               )}
 
             </button>
-
 
             {/* PROFILE */}
 
@@ -918,7 +921,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="doctor-profile-info">
 
                   <strong>
@@ -937,7 +939,6 @@ function DoctorDashboard({
                 </span>
 
               </button>
-
 
               {profileOpen && (
 
@@ -970,26 +971,20 @@ function DoctorDashboard({
 
                   </div>
 
-
                   <div className="doctor-menu-divider">
                   </div>
 
-
                   <button
                     onClick={() =>
-                      setProfileOpen(
-                        false
-                      )
+                      setProfileOpen(false)
                     }
                   >
                     👤 My Profile
                   </button>
 
-
                   <button>
                     ⚙ Settings
                   </button>
-
 
                   <button
                     className="doctor-logout-button"
@@ -1020,25 +1015,18 @@ function DoctorDashboard({
 
         </header>
 
-
-        {/* =========================
-            MAIN CONTENT
-        ========================= */}
+        {/* MAIN CONTENT */}
 
         <main className="doctor-dashboard-content">
 
-
-          {/* =====================================
-              DASHBOARD PAGE
-          ===================================== */}
+          {/* =====================
+              DASHBOARD
+          ===================== */}
 
           {activeMenu ===
             "dashboard" && (
 
             <>
-
-
-              {/* WELCOME */}
 
               <section className="doctor-welcome-section">
 
@@ -1068,7 +1056,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="doctor-welcome-summary">
 
                   <div className="doctor-summary-icon">
@@ -1091,11 +1078,9 @@ function DoctorDashboard({
 
               </section>
 
-
               {/* STATISTICS */}
 
               <section className="doctor-stats-grid">
-
 
                 <div className="doctor-stat-card">
 
@@ -1121,7 +1106,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="doctor-stat-card">
 
                   <div className="doctor-stat-icon pending">
@@ -1146,7 +1130,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="doctor-stat-card">
 
                   <div className="doctor-stat-icon confirmed">
@@ -1170,7 +1153,6 @@ function DoctorDashboard({
                   </div>
 
                 </div>
-
 
                 <div className="doctor-stat-card">
 
@@ -1198,7 +1180,6 @@ function DoctorDashboard({
 
               </section>
 
-
               {/* QUICK OVERVIEW */}
 
               <section className="doctor-appointments-section">
@@ -1222,7 +1203,6 @@ function DoctorDashboard({
 
                   </div>
 
-
                   <button
                     className="doctor-refresh-button"
                     onClick={() =>
@@ -1235,7 +1215,6 @@ function DoctorDashboard({
                   </button>
 
                 </div>
-
 
                 {!loading &&
                   appointments.length === 0 && (
@@ -1258,7 +1237,6 @@ function DoctorDashboard({
                   </div>
 
                 )}
-
 
                 {!loading &&
                   appointments.length > 0 && (
@@ -1311,7 +1289,6 @@ function DoctorDashboard({
 
                             </div>
 
-
                             <div className="doctor-appointment-detail">
 
                               <span>
@@ -1330,7 +1307,6 @@ function DoctorDashboard({
 
                             </div>
 
-
                             <div className="doctor-appointment-detail">
 
                               <span>
@@ -1348,7 +1324,6 @@ function DoctorDashboard({
                               </strong>
 
                             </div>
-
 
                             <div className="doctor-appointment-detail">
 
@@ -1389,10 +1364,9 @@ function DoctorDashboard({
 
           )}
 
-
-          {/* =====================================
-              APPOINTMENTS PAGE
-          ===================================== */}
+          {/* =====================
+              APPOINTMENTS
+          ===================== */}
 
           {activeMenu ===
             "appointments" && (
@@ -1418,7 +1392,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <button
                   className="doctor-refresh-button"
                   onClick={() => {
@@ -1434,9 +1407,6 @@ function DoctorDashboard({
 
               </div>
 
-
-              {/* LOADING */}
-
               {loading && (
 
                 <div className="doctor-loading">
@@ -1451,9 +1421,6 @@ function DoctorDashboard({
                 </div>
 
               )}
-
-
-              {/* EMPTY */}
 
               {!loading &&
                 appointments.length === 0 && (
@@ -1477,9 +1444,6 @@ function DoctorDashboard({
 
               )}
 
-
-              {/* APPOINTMENT LIST */}
-
               {!loading &&
                 appointments.length > 0 && (
 
@@ -1494,7 +1458,6 @@ function DoctorDashboard({
                           appointment.appointmentId
                         }
                       >
-
 
                         {/* PATIENT */}
 
@@ -1511,7 +1474,6 @@ function DoctorDashboard({
                               .toUpperCase()}
 
                           </div>
-
 
                           <div>
 
@@ -1533,7 +1495,6 @@ function DoctorDashboard({
 
                         </div>
 
-
                         {/* DATE */}
 
                         <div className="doctor-appointment-detail">
@@ -1554,7 +1515,6 @@ function DoctorDashboard({
 
                         </div>
 
-
                         {/* TIME */}
 
                         <div className="doctor-appointment-detail">
@@ -1574,7 +1534,6 @@ function DoctorDashboard({
                           </strong>
 
                         </div>
-
 
                         {/* STATUS */}
 
@@ -1602,10 +1561,11 @@ function DoctorDashboard({
 
                         </div>
 
-
                         {/* ACTIONS */}
 
                         <div className="doctor-card-actions">
+
+                          {/* BOOKED */}
 
                           {appointment.status ===
                             "Booked" && (
@@ -1624,7 +1584,6 @@ function DoctorDashboard({
                                 ✓ Confirm
                               </button>
 
-
                               <button
                                 className="doctor-cancel-button"
                                 onClick={() =>
@@ -1641,19 +1600,31 @@ function DoctorDashboard({
 
                           )}
 
+                          {/* CONFIRMED */}
 
                           {appointment.status ===
                             "Confirmed" && (
 
                             <button
                               className="doctor-confirmed-button"
-                              disabled
+                              onClick={() => {
+
+                                setSelectedAppointment(
+                                  appointment
+                                );
+
+                                setShowConsultationForm(
+                                  true
+                                );
+
+                              }}
                             >
-                              ✓ Confirmed
+                              Start Consultation
                             </button>
 
                           )}
 
+                          {/* CANCELLED */}
 
                           {appointment.status ===
                             "Cancelled" && (
@@ -1682,10 +1653,9 @@ function DoctorDashboard({
 
           )}
 
-
-          {/* =====================================
-              PATIENTS PAGE
-          ===================================== */}
+          {/* =====================
+              PATIENTS
+          ===================== */}
 
           {activeMenu ===
             "patients" && (
@@ -1711,7 +1681,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="availability-total">
 
                   <span>
@@ -1725,7 +1694,6 @@ function DoctorDashboard({
                 </div>
 
               </div>
-
 
               {loading && (
 
@@ -1741,7 +1709,6 @@ function DoctorDashboard({
                 </div>
 
               )}
-
 
               {!loading &&
                 uniquePatients.length === 0 && (
@@ -1764,7 +1731,6 @@ function DoctorDashboard({
                 </div>
 
               )}
-
 
               {!loading &&
                 uniquePatients.length > 0 && (
@@ -1805,7 +1771,6 @@ function DoctorDashboard({
 
                             </div>
 
-
                             <div>
 
                               <h3>
@@ -1819,15 +1784,13 @@ function DoctorDashboard({
                               </h3>
 
                               <p>
-                                Patient ID:
-                                {" "}
+                                Patient ID:{" "}
                                 {patientId}
                               </p>
 
                             </div>
 
                           </div>
-
 
                           <div className="doctor-appointment-detail">
 
@@ -1844,7 +1807,6 @@ function DoctorDashboard({
                             </strong>
 
                           </div>
-
 
                           <div className="doctor-appointment-detail">
 
@@ -1865,7 +1827,6 @@ function DoctorDashboard({
                             </strong>
 
                           </div>
-
 
                           <div className="doctor-appointment-detail">
 
@@ -1912,10 +1873,9 @@ function DoctorDashboard({
 
           )}
 
-
-          {/* =====================================
-              AVAILABILITY PAGE
-          ===================================== */}
+          {/* =====================
+              AVAILABILITY
+          ===================== */}
 
           {activeMenu ===
             "availability" && (
@@ -1941,7 +1901,6 @@ function DoctorDashboard({
 
                 </div>
 
-
                 <div className="availability-total">
 
                   <span>
@@ -1955,7 +1914,6 @@ function DoctorDashboard({
                 </div>
 
               </div>
-
 
               {/* ADD SLOT */}
 
@@ -1982,7 +1940,6 @@ function DoctorDashboard({
                   </div>
 
                 </div>
-
 
                 <form
                   className="availability-form"
@@ -2017,7 +1974,6 @@ function DoctorDashboard({
 
                   </div>
 
-
                   <div className="availability-input-group">
 
                     <label>
@@ -2039,7 +1995,6 @@ function DoctorDashboard({
 
                   </div>
 
-
                   <button
                     type="submit"
                     className="availability-add-button"
@@ -2058,11 +2013,9 @@ function DoctorDashboard({
 
               </div>
 
-
               {/* SLOT LIST */}
 
               <div className="availability-slots-container">
-
 
                 {availability.length === 0 && (
 
@@ -2085,7 +2038,6 @@ function DoctorDashboard({
 
                 )}
 
-
                 {availability.length > 0 && (
 
                   <div className="availability-slots-grid">
@@ -2103,7 +2055,6 @@ function DoctorDashboard({
                           <div className="slot-date-icon">
                             📅
                           </div>
-
 
                           <div className="slot-details">
 
@@ -2131,7 +2082,6 @@ function DoctorDashboard({
 
                           </div>
 
-
                           <div className="slot-actions">
 
                             <span
@@ -2147,7 +2097,6 @@ function DoctorDashboard({
                                 : "Booked"}
 
                             </span>
-
 
                             {slot.isAvailable && (
 
@@ -2181,7 +2130,6 @@ function DoctorDashboard({
             </section>
 
           )}
-
 
         </main>
 

@@ -5,6 +5,7 @@ import "./App.css";
 import DoctorDashboard from "./DoctorDashboard";
 import MyAppointments from "./MyAppointments";
 import AvailableSlots from "./AvailableSlots";
+import PatientConsultation from "./PatientConsultation";
 
 function App() {
 
@@ -49,12 +50,14 @@ function App() {
 
   // ==================================================
   // PATIENT PAGE NAVIGATION
-  // true  = MyAppointments
-  // false = AvailableSlots
+  //
+  // appointments
+  // booking
+  // consultations
   // ==================================================
 
-  const [showAppointments, setShowAppointments] =
-    useState(true);
+  const [patientPage, setPatientPage] =
+    useState("appointments");
 
 
   // ==================================================
@@ -80,7 +83,8 @@ function App() {
             method: "POST",
 
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
 
             body: JSON.stringify({
@@ -104,7 +108,6 @@ function App() {
             data
           );
 
-
           alert(
             "Registration successful! Please login."
           );
@@ -113,17 +116,13 @@ function App() {
           // Clear fields
 
           setFullName("");
-
           setEmail("");
-
           setPassword("");
-
           setPhone("");
-
           setRole("Patient");
 
 
-          // Go to login page
+          // Go to login
 
           setIsRegister(false);
 
@@ -174,7 +173,8 @@ function App() {
             method: "POST",
 
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
 
             body: JSON.stringify({
@@ -185,15 +185,10 @@ function App() {
         );
 
 
-        // ==================================================
-        // LOGIN SUCCESS
-        // ==================================================
-
         if (response.ok) {
 
           const userData =
             await response.json();
-
 
           console.log(
             "Logged-in user:",
@@ -201,31 +196,7 @@ function App() {
           );
 
 
-          console.log(
-            "USER ID:",
-            userData.userId
-          );
-
-
-          console.log(
-            "USER NAME:",
-            userData.fullName
-          );
-
-
-          console.log(
-            "USER EMAIL:",
-            userData.email
-          );
-
-
-          console.log(
-            "USER ROLE:",
-            userData.role
-          );
-
-
-          // Store logged-in user
+          // Store user
 
           setLoggedInUser(
             userData
@@ -237,24 +208,17 @@ function App() {
           setIsLoggedIn(true);
 
 
-          // Patient should start
-          // from MyAppointments
+          // Start patient at dashboard
 
-          setShowAppointments(true);
-
+          setPatientPage(
+            "appointments"
+          );
 
           alert(
             "Login successful!"
           );
 
-        }
-
-
-        // ==================================================
-        // LOGIN FAILED
-        // ==================================================
-
-        else {
+        } else {
 
           const errorText =
             await response.text();
@@ -265,6 +229,7 @@ function App() {
           );
 
           alert(
+            errorText ||
             "Invalid email or password"
           );
 
@@ -302,7 +267,9 @@ function App() {
 
     setPassword("");
 
-    setShowAppointments(true);
+    setPatientPage(
+      "appointments"
+    );
 
   };
 
@@ -330,8 +297,8 @@ function App() {
 
     if (
       loggedInUser.role &&
-      loggedInUser.role.toLowerCase() ===
-        "doctor"
+      loggedInUser.role
+        .toLowerCase() === "doctor"
     ) {
 
       return (
@@ -359,7 +326,10 @@ function App() {
     // PATIENT DASHBOARD
     // ==================================================
 
-    if (showAppointments) {
+    if (
+      patientPage ===
+      "appointments"
+    ) {
 
       return (
 
@@ -372,17 +342,21 @@ function App() {
           }
 
 
-          // Book Appointment click
+          // Book Appointment
 
           onBookAppointment={() =>
-            setShowAppointments(false)
+            setPatientPage(
+              "booking"
+            )
           }
 
 
-          // Logout
+          // My Consultations
 
-          onLogout={
-            handleLogout
+          onViewConsultations={() =>
+            setPatientPage(
+              "consultations"
+            )
           }
 
         />
@@ -393,7 +367,51 @@ function App() {
 
 
     // ==================================================
-    // AVAILABLE SLOTS PAGE
+    // PATIENT CONSULTATIONS
+    // ==================================================
+
+    if (
+      patientPage ===
+      "consultations"
+    ) {
+
+      return (
+
+        <PatientConsultation
+
+          patientId={userId}
+
+          patientName={
+            loggedInUser.fullName
+          }
+
+
+          // Back to dashboard
+
+          onBack={() =>
+            setPatientPage(
+              "appointments"
+            )
+          }
+
+
+          // Book Appointment
+
+          onBookAppointment={() =>
+            setPatientPage(
+              "booking"
+            )
+          }
+
+        />
+
+      );
+
+    }
+
+
+    // ==================================================
+    // AVAILABLE SLOTS / BOOKING
     // ==================================================
 
     return (
@@ -406,14 +424,18 @@ function App() {
         // Back button
 
         onBack={() =>
-          setShowAppointments(true)
+          setPatientPage(
+            "appointments"
+          )
         }
 
 
         // After successful booking
 
         onBookingSuccess={() =>
-          setShowAppointments(true)
+          setPatientPage(
+            "appointments"
+          )
         }
 
       />
@@ -431,27 +453,21 @@ function App() {
 
     <div className="login-page">
 
-
       <div className="login-card">
 
 
-        {/* =========================
-            BRAND
-        ========================= */}
+        {/* BRAND */}
 
         <h1>
           SecureDoctor
         </h1>
-
 
         <p className="subtitle">
           Secure Doctor-Patient Records
         </p>
 
 
-        {/* =========================
-            TITLE
-        ========================= */}
+        {/* TITLE */}
 
         <h2>
 
@@ -462,18 +478,14 @@ function App() {
         </h2>
 
 
-        {/* =========================
-            FORM
-        ========================= */}
+        {/* FORM */}
 
         <form
           onSubmit={handleSubmit}
         >
 
 
-          {/* =========================
-              FULL NAME
-          ========================= */}
+          {/* FULL NAME */}
 
           {isRegister && (
 
@@ -500,9 +512,7 @@ function App() {
           )}
 
 
-          {/* =========================
-              PHONE
-          ========================= */}
+          {/* PHONE */}
 
           {isRegister && (
 
@@ -529,9 +539,7 @@ function App() {
           )}
 
 
-          {/* =========================
-              ROLE
-          ========================= */}
+          {/* ROLE */}
 
           {isRegister && (
 
@@ -565,9 +573,7 @@ function App() {
           )}
 
 
-          {/* =========================
-              EMAIL
-          ========================= */}
+          {/* EMAIL */}
 
           <div className="form-group">
 
@@ -590,9 +596,7 @@ function App() {
           </div>
 
 
-          {/* =========================
-              PASSWORD
-          ========================= */}
+          {/* PASSWORD */}
 
           <div className="form-group">
 
@@ -615,9 +619,7 @@ function App() {
           </div>
 
 
-          {/* =========================
-              SUBMIT BUTTON
-          ========================= */}
+          {/* SUBMIT */}
 
           <button
             type="submit"
@@ -632,16 +634,13 @@ function App() {
         </form>
 
 
-        {/* =========================
-            LOGIN / REGISTER SWITCH
-        ========================= */}
+        {/* SWITCH LOGIN / REGISTER */}
 
         <p className="register-text">
 
           {isRegister
             ? "Already have an account?"
             : "Don't have an account?"}
-
 
           <span
             onClick={() =>
@@ -659,9 +658,7 @@ function App() {
 
         </p>
 
-
       </div>
-
 
     </div>
 
