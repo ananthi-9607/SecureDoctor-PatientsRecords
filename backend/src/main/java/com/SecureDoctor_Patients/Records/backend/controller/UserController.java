@@ -23,13 +23,11 @@ public class UserController {
 
     private final UserService userService;
 
-
     // =========================
     // CONSTRUCTOR
     // =========================
 
     public UserController(UserService userService) {
-
         this.userService = userService;
     }
 
@@ -39,16 +37,25 @@ public class UserController {
     // =========================
 
     @PostMapping
-    public ResponseEntity<User> createUser(
+    public ResponseEntity<?> createUser(
             @RequestBody User user) {
 
-        User savedUser =
-                userService.saveUser(user);
+        try {
 
-        return new ResponseEntity<>(
-                savedUser,
-                HttpStatus.CREATED
-        );
+            User savedUser =
+                    userService.saveUser(user);
+
+            return new ResponseEntity<>(
+                    savedUser,
+                    HttpStatus.CREATED
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
+        }
     }
 
 

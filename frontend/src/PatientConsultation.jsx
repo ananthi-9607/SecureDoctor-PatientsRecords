@@ -7,14 +7,9 @@ function PatientConsultation({
   onBack,
   onBookAppointment,
 }) {
-  const [consultations, setConsultations] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [consultations, setConsultations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // =========================
   // LOAD PATIENT CONSULTATIONS
@@ -31,80 +26,102 @@ function PatientConsultation({
         );
 
         if (!response.ok) {
-          throw new Error(
-            "Failed to load consultations"
-          );
+          throw new Error("Failed to load consultations");
         }
 
-        const data =
-          await response.json();
+        const data = await response.json();
+
+        console.log("Patient consultation:", data);
+
+        const consultationData = Array.isArray(data) ? data : [];
+
+        // =========================
+        // LOAD PRESCRIPTIONS
+        // FOR EACH CONSULTATION
+        // =========================
+
+        const consultationsWithPrescriptions = await Promise.all(
+          consultationData.map(async (consultation) => {
+            try {
+              const prescriptionResponse = await fetch(
+                `http://localhost:8080/prescriptions/consultation/${consultation.consultId}`
+              );
+
+              if (!prescriptionResponse.ok) {
+                return {
+                  ...consultation,
+                  prescriptions: [],
+                };
+              }
+
+              const prescriptionData =
+                await prescriptionResponse.json();
+
+              return {
+                ...consultation,
+                prescriptions: Array.isArray(prescriptionData)
+                  ? prescriptionData
+                  : [],
+              };
+            } catch (error) {
+              console.error(
+                `Prescription loading error for consultation ${consultation.consultId}:`,
+                error
+              );
+
+              return {
+                ...consultation,
+                prescriptions: [],
+              };
+            }
+          })
+        );
 
         console.log(
-          "Patient consultation:",
-          data
+          "Consultations with prescriptions:",
+          consultationsWithPrescriptions
         );
 
-        setConsultations(
-          Array.isArray(data) ? data : []
-        );
-
+        setConsultations(consultationsWithPrescriptions);
       } catch (error) {
-
         console.error(
           "Consultation loading error:",
           error
         );
 
-        setError(
-          "Unable to load consultations."
-        );
-
+        setError("Unable to load consultations.");
         setConsultations([]);
-
       } finally {
-
         setLoading(false);
-
       }
     };
 
     if (patientId) {
       fetchConsultations();
     }
-
   }, [patientId]);
-
 
   // =========================
   // FORMAT DATE
   // =========================
 
   const formatDate = (date) => {
-
     if (!date) {
       return "Not available";
     }
 
     try {
-
       return new Date(
         `${date}T00:00:00`
-      ).toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }
-      );
-
+      ).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
     } catch {
-
       return date;
-
     }
   };
-
 
   // =========================
   // PATIENT INITIAL
@@ -115,9 +132,7 @@ function PatientConsultation({
       ?.charAt(0)
       ?.toUpperCase() || "P";
 
-
   return (
-
     <div className="consultation-page">
 
       {/* =========================
@@ -133,7 +148,6 @@ function PatientConsultation({
           </div>
 
           <div>
-
             <h2>
               SecureDoctor
             </h2>
@@ -141,11 +155,9 @@ function PatientConsultation({
             <p>
               Patient Portal
             </p>
-
           </div>
 
         </div>
-
 
         <nav className="consultation-nav">
 
@@ -153,44 +165,26 @@ function PatientConsultation({
             className="consultation-nav-item"
             onClick={onBack}
           >
-
-            <span>
-              ▦
-            </span>
-
+            <span>▦</span>
             Dashboard
-
           </button>
-
 
           <button
             className="consultation-nav-item"
             onClick={onBookAppointment}
           >
-
-            <span>
-              +
-            </span>
-
+            <span>+</span>
             Book Appointment
-
           </button>
-
 
           <button
             className="consultation-nav-item active"
           >
-
-            <span>
-              📋
-            </span>
-
+            <span>📋</span>
             My Consultations
-
           </button>
 
         </nav>
-
 
         <div className="consultation-security">
 
@@ -199,7 +193,6 @@ function PatientConsultation({
           </div>
 
           <div>
-
             <strong>
               Secure Medical Records
             </strong>
@@ -207,13 +200,11 @@ function PatientConsultation({
             <p>
               Your data is protected
             </p>
-
           </div>
 
         </div>
 
       </aside>
-
 
       {/* =========================
           MAIN CONTENT
@@ -221,8 +212,9 @@ function PatientConsultation({
 
       <main className="consultation-main">
 
-
-        {/* HEADER */}
+        {/* =========================
+            HEADER
+        ========================= */}
 
         <header className="consultation-header">
 
@@ -243,13 +235,10 @@ function PatientConsultation({
 
           </div>
 
-
           <div className="consultation-profile">
 
             <div className="consultation-avatar">
-
               {patientInitial}
-
             </div>
 
             <div>
@@ -267,7 +256,6 @@ function PatientConsultation({
           </div>
 
         </header>
-
 
         {/* =========================
             LOADING
@@ -294,7 +282,6 @@ function PatientConsultation({
 
         )}
 
-
         {/* =========================
             ERROR
         ========================= */}
@@ -314,7 +301,6 @@ function PatientConsultation({
           </div>
 
         )}
-
 
         {/* =========================
             NO CONSULTATIONS
@@ -348,8 +334,7 @@ function PatientConsultation({
 
             </div>
 
-          )}
-
+        )}
 
         {/* =========================
             CONSULTATION LIST
@@ -361,131 +346,207 @@ function PatientConsultation({
 
             <div className="consultation-list">
 
-              {consultations.map(
-                (consultation) => (
+              {consultations.map((consultation) => (
 
-                  <div
-                    className="consultation-card"
-                    key={
-                      consultation.consultId
-                    }
-                  >
+                <div
+                  className="consultation-card"
+                  key={consultation.consultId}
+                >
 
-                    <div className="consultation-card-header">
+                  {/* =========================
+                      CONSULTATION HEADER
+                  ========================= */}
 
-                      <div>
+                  <div className="consultation-card-header">
 
-                        <span className="consultation-label">
+                    <div>
 
-                          CONSULTATION
-
-                        </span>
-
-                        <h2>
-
-                          Consultation #
-                          {consultation.consultId}
-
-                        </h2>
-
-                      </div>
-
-
-                      <div className="consultation-date">
-
-                        📅{" "}
-
-                        {formatDate(
-                          consultation.consultationDate
-                        )}
-
-                      </div>
-
-                    </div>
-
-
-                    <div className="consultation-details">
-
-
-                      {/* APPOINTMENT */}
-
-                      <div className="detail-box">
-
-                        <span>
-                          APPOINTMENT ID
-                        </span>
-
-                        <strong>
-
-                          #
-                          {consultation.appointmentId}
-
-                        </strong>
-
-                      </div>
-
-
-                      {/* DIAGNOSIS */}
-
-                      <div className="detail-box diagnosis-box">
-
-                        <span>
-                          DIAGNOSIS
-                        </span>
-
-                        <strong>
-
-                          🩺{" "}
-
-                          {consultation.diagnosis ||
-                            "Not available"}
-
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* NOTES */}
-
-                    <div className="consultation-notes">
-
-                      <span>
-                        📝 DOCTOR'S NOTES
+                      <span className="consultation-label">
+                        CONSULTATION
                       </span>
 
-                      <p>
-
-                        {consultation.encryptedNotes ||
-                          "No notes available."}
-
-                      </p>
+                      <h2>
+                        Consultation #
+                        {consultation.consultId}
+                      </h2>
 
                     </div>
 
+                    <div className="consultation-date">
+                      📅{" "}
+                      {formatDate(
+                        consultation.consultationDate
+                      )}
+                    </div>
 
-                    <div className="consultation-security-note">
+                  </div>
 
-                      🔒 This consultation was
-                      securely retrieved and decrypted
-                      for authorized patient access.
+                  {/* =========================
+                      CONSULTATION DETAILS
+                  ========================= */}
+
+                  <div className="consultation-details">
+
+                    {/* APPOINTMENT */}
+
+                    <div className="detail-box">
+
+                      <span>
+                        APPOINTMENT ID
+                      </span>
+
+                      <strong>
+                        #{consultation.appointmentId}
+                      </strong>
+
+                    </div>
+
+                    {/* DIAGNOSIS */}
+
+                    <div className="detail-box diagnosis-box">
+
+                      <span>
+                        DIAGNOSIS
+                      </span>
+
+                      <strong>
+                        🩺{" "}
+                        {consultation.diagnosis ||
+                          "Not available"}
+                      </strong>
 
                     </div>
 
                   </div>
 
-                )
-              )}
+                  {/* =========================
+                      DOCTOR NOTES
+                  ========================= */}
+
+                  <div className="consultation-notes">
+
+                    <span>
+                      📝 DOCTOR'S NOTES
+                    </span>
+
+                    <p>
+                      {consultation.encryptedNotes ||
+                        "No notes available."}
+                    </p>
+
+                  </div>
+
+                  {/* =========================
+                      PRESCRIPTIONS
+                  ========================= */}
+
+                  <div className="patient-prescription-section">
+
+                    <div className="prescription-heading">
+
+                      <span>
+                        💊 PRESCRIPTIONS
+                      </span>
+
+                      <strong>
+                        Medicines prescribed
+                      </strong>
+
+                    </div>
+
+                    {/* =========================
+                        PRESCRIPTION TABLE
+                    ========================= */}
+
+                    {consultation.prescriptions &&
+                    consultation.prescriptions.length > 0 ? (
+
+                      <div className="patient-prescription-table-wrapper">
+
+                        <table className="patient-prescription-table">
+
+                          <thead>
+                            <tr>
+                              <th>MEDICINE</th>
+                              <th>DOSAGE</th>
+                              <th>INSTRUCTION</th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+
+                            {consultation.prescriptions.map(
+                              (prescription) => (
+
+                                <tr
+                                  key={
+                                    prescription.prescriptId
+                                  }
+                                >
+
+                                  <td>
+                                    💊{" "}
+                                    {prescription.medicineName}
+                                  </td>
+
+                                  <td>
+                                    {prescription.dosage ||
+                                      "Not specified"}
+                                  </td>
+
+                                  <td>
+                                    {prescription.instruction ||
+                                      "Not specified"}
+                                  </td>
+
+                                </tr>
+
+                              )
+                            )}
+
+                          </tbody>
+
+                        </table>
+
+                      </div>
+
+                    ) : (
+
+                      <div className="no-prescription">
+
+                        💊 No prescriptions available
+                        for this consultation.
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                  {/* =========================
+                      SECURITY NOTE
+                  ========================= */}
+
+                  <div className="consultation-security-note">
+
+                    🔒 This consultation and
+                    prescription information was
+                    securely retrieved for
+                    authorized patient access.
+
+                  </div>
+
+                </div>
+
+              ))}
 
             </div>
 
-          )}
+        )}
 
       </main>
 
     </div>
-
   );
 }
 

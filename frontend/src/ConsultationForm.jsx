@@ -6,9 +6,33 @@ function ConsultationForm({
   onBack,
   onConsultationSaved
 }) {
+  // =========================
+  // CONSULTATION STATES
+  // =========================
+
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
+
   const [loading, setLoading] = useState(false);
+
+  // =========================
+  // PRESCRIPTION STATES
+  // =========================
+
+  const [consultationId, setConsultationId] = useState(null);
+
+  const [medicineName, setMedicineName] = useState("");
+  const [dosage, setDosage] = useState("");
+  const [instruction, setInstruction] = useState("");
+
+  const [prescriptions, setPrescriptions] = useState([]);
+
+  const [prescriptionLoading, setPrescriptionLoading] =
+    useState(false);
+
+  // =========================
+  // SAVE CONSULTATION
+  // =========================
 
   const saveConsultation = async (e) => {
     e.preventDefault();
@@ -45,9 +69,15 @@ function ConsultationForm({
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Consultation error:", errorText);
 
-        throw new Error("Failed to save consultation");
+        console.error(
+          "Consultation error:",
+          errorText
+        );
+
+        throw new Error(
+          "Failed to save consultation"
+        );
       }
 
       const data = await response.json();
@@ -57,11 +87,15 @@ function ConsultationForm({
         data
       );
 
-      alert("Consultation saved successfully!");
+      // =========================
+      // GET CONSULTATION ID
+      // =========================
 
-      if (onConsultationSaved) {
-        onConsultationSaved(data);
-      }
+      setConsultationId(data.consultId);
+
+      alert(
+        "Consultation saved successfully! Now add prescription."
+      );
 
     } catch (error) {
       console.error(
@@ -78,10 +112,148 @@ function ConsultationForm({
     }
   };
 
+  // =========================
+  // ADD PRESCRIPTION
+  // =========================
+
+  const addPrescription = async () => {
+
+    if (!consultationId) {
+      alert(
+        "Consultation ID is missing."
+      );
+      return;
+    }
+
+    if (!medicineName.trim()) {
+      alert(
+        "Please enter medicine name."
+      );
+      return;
+    }
+
+    if (!dosage.trim()) {
+      alert(
+        "Please enter dosage."
+      );
+      return;
+    }
+
+    if (!instruction.trim()) {
+      alert(
+        "Please enter instruction."
+      );
+      return;
+    }
+
+    setPrescriptionLoading(true);
+
+    try {
+
+      const prescriptionData = {
+        consultId: consultationId,
+        medicineName: medicineName,
+        dosage: dosage,
+        instruction: instruction
+      };
+
+      const response = await fetch(
+        "http://localhost:8080/prescriptions",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify(
+            prescriptionData
+          )
+        }
+      );
+
+      if (!response.ok) {
+
+        const errorText =
+          await response.text();
+
+        console.error(
+          "Prescription error:",
+          errorText
+        );
+
+        throw new Error(
+          "Failed to save prescription"
+        );
+      }
+
+      const data =
+        await response.json();
+
+      console.log(
+        "Prescription saved:",
+        data
+      );
+
+      // Add saved prescription
+      // to local list
+
+      setPrescriptions(
+        (previous) => [
+          ...previous,
+          data
+        ]
+      );
+
+      // Clear input fields
+
+      setMedicineName("");
+      setDosage("");
+      setInstruction("");
+
+      alert(
+        "Prescription added successfully!"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Save prescription error:",
+        error
+      );
+
+      alert(
+        "Unable to save prescription."
+      );
+
+    } finally {
+
+      setPrescriptionLoading(
+        false
+      );
+    }
+  };
+
+  // =========================
+  // FINISH CONSULTATION
+  // =========================
+
+  const finishConsultation = () => {
+
+    if (onConsultationSaved) {
+      onConsultationSaved({
+        consultId: consultationId
+      });
+    }
+  };
+
   return (
+
     <div className="consultation-page">
 
-      {/* HEADER */}
+      {/* =========================
+          HEADER
+      ========================= */}
 
       <header className="consultation-header">
 
@@ -92,8 +264,13 @@ function ConsultationForm({
           </div>
 
           <div>
-            <h2>SecureDoctor</h2>
-            <span>Doctor Portal</span>
+            <h2>
+              SecureDoctor
+            </h2>
+
+            <span>
+              Doctor Portal
+            </span>
           </div>
 
         </div>
@@ -108,7 +285,9 @@ function ConsultationForm({
       </header>
 
 
-      {/* MAIN CONTENT */}
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
 
       <main className="consultation-container">
 
@@ -130,7 +309,9 @@ function ConsultationForm({
         </div>
 
 
-        {/* APPOINTMENT DETAILS */}
+        {/* =========================
+            APPOINTMENT DETAILS
+        ========================= */}
 
         <section className="appointment-info-card">
 
@@ -142,7 +323,9 @@ function ConsultationForm({
 
             <div>
 
-              <span>Patient ID</span>
+              <span>
+                Patient ID
+              </span>
 
               <strong>
                 {appointment.patientId}
@@ -150,9 +333,12 @@ function ConsultationForm({
 
             </div>
 
+
             <div>
 
-              <span>Appointment Date</span>
+              <span>
+                Appointment Date
+              </span>
 
               <strong>
                 {appointment.appointmentDate}
@@ -160,9 +346,12 @@ function ConsultationForm({
 
             </div>
 
+
             <div>
 
-              <span>Appointment Time</span>
+              <span>
+                Appointment Time
+              </span>
 
               <strong>
                 {appointment.appointmentTime}
@@ -175,76 +364,336 @@ function ConsultationForm({
         </section>
 
 
-        {/* CONSULTATION FORM */}
+        {/* =========================
+            CONSULTATION FORM
+        ========================= */}
 
-        <form
-          className="consultation-form"
-          onSubmit={saveConsultation}
-        >
+        {!consultationId && (
 
-          <div className="form-section">
+          <form
+            className="consultation-form"
+            onSubmit={saveConsultation}
+          >
 
-            <label>
-              Diagnosis
-            </label>
+            {/* DIAGNOSIS */}
 
-            <input
-              type="text"
-              placeholder="Enter diagnosis"
-              value={diagnosis}
-              onChange={(e) =>
-                setDiagnosis(e.target.value)
-              }
-            />
+            <div className="form-section">
 
-          </div>
+              <label>
+                Diagnosis
+              </label>
 
+              <input
+                type="text"
+                placeholder="Enter diagnosis"
+                value={diagnosis}
+                onChange={(e) =>
+                  setDiagnosis(
+                    e.target.value
+                  )
+                }
+              />
 
-          <div className="form-section">
-
-            <label>
-              Consultation Notes
-            </label>
-
-            <textarea
-              rows="8"
-              placeholder="Enter consultation notes, observations and recommendations..."
-              value={notes}
-              onChange={(e) =>
-                setNotes(e.target.value)
-              }
-            />
-
-          </div>
+            </div>
 
 
-          <div className="consultation-actions">
+            {/* NOTES */}
 
-            <button
-              type="button"
-              className="cancel-consultation-button"
-              onClick={onBack}
-            >
-              Cancel
-            </button>
+            <div className="form-section">
 
-            <button
-              type="submit"
-              className="save-consultation-button"
-              disabled={loading}
-            >
-              {loading
-                ? "Saving..."
-                : "Save Consultation"}
-            </button>
+              <label>
+                Consultation Notes
+              </label>
 
-          </div>
+              <textarea
+                rows="8"
+                placeholder="Enter consultation notes, observations and recommendations..."
+                value={notes}
+                onChange={(e) =>
+                  setNotes(
+                    e.target.value
+                  )
+                }
+              />
 
-        </form>
+            </div>
+
+
+            {/* ACTIONS */}
+
+            <div className="consultation-actions">
+
+              <button
+                type="button"
+                className="cancel-consultation-button"
+                onClick={onBack}
+              >
+                Cancel
+              </button>
+
+
+              <button
+                type="submit"
+                className="save-consultation-button"
+                disabled={loading}
+              >
+
+                {loading
+                  ? "Saving..."
+                  : "Save Consultation"}
+
+              </button>
+
+            </div>
+
+          </form>
+
+        )}
+
+
+        {/* =========================
+            PRESCRIPTION SECTION
+        ========================= */}
+
+        {consultationId && (
+
+          <section className="prescription-section">
+
+            <div className="prescription-title">
+
+              <span>
+                PRESCRIPTION
+              </span>
+
+              <h2>
+                Add Medicines
+              </h2>
+
+              <p>
+                Add the medicines prescribed
+                for this consultation.
+              </p>
+
+            </div>
+
+
+            {/* CONSULTATION ID */}
+
+            <div className="consultation-id-box">
+
+              <span>
+                CONSULTATION ID
+              </span>
+
+              <strong>
+                #{consultationId}
+              </strong>
+
+            </div>
+
+
+            {/* MEDICINE FORM */}
+
+            <div className="prescription-form">
+
+              {/* MEDICINE NAME */}
+
+              <div className="form-section">
+
+                <label>
+                  Medicine Name
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Example: Paracetamol"
+                  value={medicineName}
+                  onChange={(e) =>
+                    setMedicineName(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </div>
+
+
+              {/* DOSAGE */}
+
+              <div className="form-section">
+
+                <label>
+                  Dosage
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Example: 500mg"
+                  value={dosage}
+                  onChange={(e) =>
+                    setDosage(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </div>
+
+
+              {/* INSTRUCTION */}
+
+              <div className="form-section">
+
+                <label>
+                  Instruction
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Example: Take after food"
+                  value={instruction}
+                  onChange={(e) =>
+                    setInstruction(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </div>
+
+
+              {/* ADD BUTTON */}
+
+              <button
+                type="button"
+                className="add-prescription-button"
+                onClick={addPrescription}
+                disabled={
+                  prescriptionLoading
+                }
+              >
+
+                {prescriptionLoading
+                  ? "Adding..."
+                  : "+ Add Prescription"}
+
+              </button>
+
+            </div>
+
+
+            {/* =========================
+                ADDED PRESCRIPTIONS
+            ========================= */}
+
+            {prescriptions.length > 0 && (
+
+              <div className="prescription-list">
+
+                <h3>
+                  Added Medicines
+                </h3>
+
+
+                {prescriptions.map(
+                  (prescription, index) => (
+
+                    <div
+                      className="prescription-card"
+                      key={
+                        prescription.prescriptId ||
+                        index
+                      }
+                    >
+
+                      <div>
+
+                        <span>
+                          MEDICINE
+                        </span>
+
+                        <strong>
+                          💊{" "}
+                          {
+                            prescription.medicineName
+                          }
+                        </strong>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          DOSAGE
+                        </span>
+
+                        <strong>
+                          {
+                            prescription.dosage
+                          }
+                        </strong>
+
+                      </div>
+
+
+                      <div>
+
+                        <span>
+                          INSTRUCTION
+                        </span>
+
+                        <strong>
+                          {
+                            prescription.instruction
+                          }
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            )}
+
+
+            {/* =========================
+                FINISH
+            ========================= */}
+
+            <div className="consultation-actions">
+
+              <button
+                type="button"
+                className="cancel-consultation-button"
+                onClick={onBack}
+              >
+                Back
+              </button>
+
+
+              <button
+                type="button"
+                className="save-consultation-button"
+                onClick={finishConsultation}
+              >
+                Finish Consultation
+              </button>
+
+            </div>
+
+          </section>
+
+        )}
 
       </main>
 
     </div>
+
   );
 }
 

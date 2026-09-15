@@ -121,3 +121,21 @@ Content-Type: application/json
     "encryptedNotes": "Patient has mild fever and body pain",
     "consultationDate": "2026-08-27"
 }
+
+###
+GET http://localhost:8080/consultations/appointment/6
+
+
+### Add Prescription
+POST http://localhost:8080/prescriptions
+Content-Type: application/json
+
+{
+    "consultId": 3,
+    "medicineName": "Paracetamol",
+    "instruction": "Take after food",
+    "dosage": "500mg"
+}
+
+### Get Prescriptions
+GET http://localhost:8080/prescriptions/consultation/4

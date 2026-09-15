@@ -5,6 +5,10 @@
   color: #1f2937;
 }
 
+/* =========================
+   SIDEBAR
+========================= */
+
 .consultation-sidebar {
   width: 250px;
   min-height: 100vh;
@@ -46,6 +50,10 @@
   color: #6b7280;
 }
 
+/* =========================
+   NAVIGATION
+========================= */
+
 .consultation-nav {
   display: flex;
   flex-direction: column;
@@ -75,6 +83,10 @@
   color: white;
 }
 
+/* =========================
+   SECURITY SIDEBAR
+========================= */
+
 .consultation-security {
   margin-top: auto;
   padding: 16px;
@@ -98,11 +110,19 @@
   color: #6b7280;
 }
 
+/* =========================
+   MAIN CONTENT
+========================= */
+
 .consultation-main {
   flex: 1;
   padding: 40px;
   max-width: 1100px;
 }
+
+/* =========================
+   HEADER
+========================= */
 
 .consultation-header {
   display: flex;
@@ -156,6 +176,10 @@
   margin-top: 3px;
 }
 
+/* =========================
+   CONSULTATION LIST
+========================= */
+
 .consultation-list {
   display: flex;
   flex-direction: column;
@@ -195,6 +219,10 @@
   border-radius: 8px;
 }
 
+/* =========================
+   CONSULTATION DETAILS
+========================= */
+
 .consultation-details {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -223,6 +251,10 @@
   background: #eff6ff;
 }
 
+/* =========================
+   DOCTOR NOTES
+========================= */
+
 .consultation-notes {
   background: #f8fafc;
   border-radius: 12px;
@@ -241,11 +273,101 @@
   color: #374151;
 }
 
+/* =========================
+   PRESCRIPTIONS
+========================= */
+
+.patient-prescription-section {
+  margin-top: 22px;
+}
+
+.prescription-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.prescription-heading span {
+  font-size: 12px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.prescription-heading strong {
+  font-size: 15px;
+  color: #1f2937;
+}
+
+/* =========================
+   PRESCRIPTION TABLE
+========================= */
+
+.patient-prescription-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 15px;
+}
+
+.patient-prescription-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.patient-prescription-table th {
+  padding: 14px 16px;
+  text-align: left;
+  background: #eef4ff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: 2px solid #dbe5f5;
+}
+
+.patient-prescription-table td {
+  padding: 14px 16px;
+  text-align: left;
+  color: #333333;
+  font-size: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.patient-prescription-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.patient-prescription-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* =========================
+   NO PRESCRIPTION
+========================= */
+
+.no-prescription {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 10px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =========================
+   SECURITY NOTE
+========================= */
+
 .consultation-security-note {
   margin-top: 18px;
   font-size: 12px;
   color: #059669;
 }
+
+/* =========================
+   LOADING / EMPTY
+========================= */
 
 .consultation-loading,
 .no-consultation {
@@ -255,6 +377,7 @@
   align-items: center;
   min-height: 400px;
 }
+
 .consultation-error {
   background: white;
   padding: 60px 30px;
@@ -279,9 +402,13 @@
   cursor: pointer;
 }
 
+/* =========================
+   MOBILE
+========================= */
+
 @media (max-width: 768px) {
 
-  .consultations-page {
+  .consultation-page {
     flex-direction: column;
   }
 
@@ -302,6 +429,10 @@
 
   .consultation-details {
     grid-template-columns: 1fr;
+  }
+
+  .patient-prescription-table {
+    min-width: 600px;
   }
 
 }
