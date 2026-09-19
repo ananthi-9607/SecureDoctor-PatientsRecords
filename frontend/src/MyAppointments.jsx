@@ -6,6 +6,7 @@ function MyAppointments({
   patientName,
   onBookAppointment,
   onViewConsultations,
+  onLogout,
 }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -182,6 +183,10 @@ function MyAppointments({
     patientName?.charAt(0)?.toUpperCase() ||
     "P";
 
+  // =========================
+  // UI
+  // =========================
+
   return (
     <div className="patient-dashboard-page">
 
@@ -199,7 +204,6 @@ function MyAppointments({
 
           <div>
             <h2>SecureDoctor</h2>
-
             <p>Patient Portal</p>
           </div>
 
@@ -310,8 +314,11 @@ function MyAppointments({
               🔔
 
               <span className="notification-dot"></span>
+
             </button>
 
+
+            {/* PROFILE */}
 
             <div className="profile-wrapper">
 
@@ -347,6 +354,8 @@ function MyAppointments({
               </button>
 
 
+              {/* PROFILE DROPDOWN */}
+
               {showProfileMenu && (
 
                 <div className="profile-dropdown">
@@ -375,15 +384,26 @@ function MyAppointments({
                   <div className="dropdown-line"></div>
 
 
+                  {/* MY PROFILE */}
+
                   <button>
                     👤 My Profile
                   </button>
+
+
+                  {/* SETTINGS */}
 
                   <button>
                     ⚙ Settings
                   </button>
 
-                  <button className="logout-item">
+
+                  {/* LOGOUT */}
+
+                  <button
+                    className="logout-item"
+                    onClick={onLogout}
+                  >
                     ↪ Logout
                   </button>
 
@@ -619,9 +639,11 @@ function MyAppointments({
               <div className="dashboard-empty-state">
 
                 <div className="loading-animation">
+
                   <div></div>
                   <div></div>
                   <div></div>
+
                 </div>
 
                 <h3>

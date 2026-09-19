@@ -358,6 +358,7 @@ function App() {
               "consultations"
             )
           }
+           onLogout={handleLogout}
 
         />
 
