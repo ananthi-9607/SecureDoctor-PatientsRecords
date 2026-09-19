@@ -65,6 +65,7 @@ function App() {
   // ==================================================
 
   const handleSubmit = async (e) => {
+    console.log("HANDLE SUBMIT CALLED");
 
     e.preventDefault();
 

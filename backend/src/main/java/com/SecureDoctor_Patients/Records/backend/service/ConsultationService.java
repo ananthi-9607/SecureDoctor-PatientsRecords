@@ -19,6 +19,8 @@ public class ConsultationService {
     private final ConsultationRepository consultationRepository;
     private final AppointmentRepository appointmentRepository;
     private final EncryptionService encryptionService;
+    private final AuditLogService auditLogService;
+
 
     // =========================
     // CONSTRUCTOR
@@ -27,12 +29,22 @@ public class ConsultationService {
     public ConsultationService(
             ConsultationRepository consultationRepository,
             AppointmentRepository appointmentRepository,
-            EncryptionService encryptionService) {
+            EncryptionService encryptionService,
+            AuditLogService auditLogService) {
 
-        this.consultationRepository = consultationRepository;
-        this.appointmentRepository = appointmentRepository;
-        this.encryptionService = encryptionService;
+        this.consultationRepository =
+                consultationRepository;
+
+        this.appointmentRepository =
+                appointmentRepository;
+
+        this.encryptionService =
+                encryptionService;
+
+        this.auditLogService =
+                auditLogService;
     }
+
 
     // =========================
     // CREATE CONSULTATION
@@ -51,6 +63,7 @@ public class ConsultationService {
             );
         }
 
+
         // CHECK APPOINTMENT ID
 
         if (consultation.getAppointmentId() == null) {
@@ -60,26 +73,32 @@ public class ConsultationService {
             );
         }
 
+
         // =========================
         // CHECK APPOINTMENT EXISTS
         // =========================
 
         appointmentRepository
-                .findById(consultation.getAppointmentId())
+                .findById(
+                        consultation.getAppointmentId()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Appointment not found"
                         )
                 );
 
+
         // =========================
-        // PREVENT DUPLICATE CONSULTATION
+        // PREVENT DUPLICATE
+        // CONSULTATION
         // =========================
 
         Optional<Consultation> existingConsultation =
-                consultationRepository.findByAppointmentId(
-                        consultation.getAppointmentId()
-                );
+                consultationRepository
+                        .findByAppointmentId(
+                                consultation.getAppointmentId()
+                        );
 
         if (existingConsultation.isPresent()) {
 
@@ -87,6 +106,7 @@ public class ConsultationService {
                     "Consultation already exists for this appointment"
             );
         }
+
 
         // =========================
         // SET CONSULTATION DATE
@@ -99,8 +119,9 @@ public class ConsultationService {
             );
         }
 
+
         // =========================
-        // ENCRYPT DIAGNOSIS 🔐
+        // ENCRYPT DIAGNOSIS
         // =========================
 
         consultation.setDiagnosis(
@@ -109,8 +130,9 @@ public class ConsultationService {
                 )
         );
 
+
         // =========================
-        // ENCRYPT NOTES 🔐
+        // ENCRYPT NOTES
         // =========================
 
         consultation.setEncryptedNotes(
@@ -119,14 +141,31 @@ public class ConsultationService {
                 )
         );
 
+
         // =========================
         // SAVE ENCRYPTED DATA
         // =========================
 
-        return consultationRepository.save(
-                consultation
+        Consultation savedConsultation =
+                consultationRepository.save(
+                        consultation
+                );
+
+
+        // =========================
+        // AUDIT LOG
+        // =========================
+
+        auditLogService.logAction(
+                null,
+                "CREATE CONSULTATION",
+                "127.0.0.1"
         );
+
+
+        return savedConsultation;
     }
+
 
     // =========================
     // GET CONSULTATION BY
@@ -139,19 +178,28 @@ public class ConsultationService {
 
         Consultation consultation =
                 consultationRepository
-                        .findByAppointmentId(appointmentId)
+                        .findByAppointmentId(
+                                appointmentId
+                        )
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
                                         "Consultation not found"
                                 )
                         );
 
-        // DECRYPT DATA 🔓
 
-        decryptConsultation(consultation);
+        // =========================
+        // DECRYPT DATA
+        // =========================
+
+        decryptConsultation(
+                consultation
+        );
+
 
         return consultation;
     }
+
 
     // =========================
     // GET CONSULTATIONS BY
@@ -159,7 +207,8 @@ public class ConsultationService {
     // =========================
 
     @Transactional(readOnly = true)
-    public List<Consultation> getConsultationsByPatient(
+    public List<Consultation>
+    getConsultationsByPatient(
             Long patientId) {
 
         // GET ALL APPOINTMENTS
@@ -167,13 +216,17 @@ public class ConsultationService {
 
         List<Appointment> appointments =
                 appointmentRepository
-                        .findByPatientId(patientId);
+                        .findByPatientId(
+                                patientId
+                        );
+
 
         // GET CONSULTATION FOR
         // EACH APPOINTMENT
 
         List<Consultation> consultations =
                 appointments.stream()
+
                         .map(appointment ->
                                 consultationRepository
                                         .findByAppointmentId(
@@ -182,19 +235,29 @@ public class ConsultationService {
                                         )
                                         .orElse(null)
                         )
-                        .filter(consultation ->
-                                consultation != null
-                        )
-                        .collect(Collectors.toList());
 
-        // DECRYPT ALL CONSULTATIONS 🔓
+                        .filter(
+                                consultation ->
+                                        consultation != null
+                        )
+
+                        .collect(
+                                Collectors.toList()
+                        );
+
+
+        // =========================
+        // DECRYPT ALL CONSULTATIONS
+        // =========================
 
         consultations.forEach(
                 this::decryptConsultation
         );
 
+
         return consultations;
     }
+
 
     // =========================
     // DECRYPT CONSULTATION

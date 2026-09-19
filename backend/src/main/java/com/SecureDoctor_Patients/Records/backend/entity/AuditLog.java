@@ -4,35 +4,63 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "auditlogs")
 public class AuditLog {
+
+    // =========================
+    // LOG ID
+    // =========================
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "log_id")
+    private Long logId;
+
+
+    // =========================
+    // USER ID
+    // =========================
 
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(nullable = false)
+
+    // =========================
+    // ACTION
+    // =========================
+
+    @Column(name = "action", nullable = false)
     private String action;
 
-    @Column(nullable = false)
-    private String entity;
 
-    @Column(name = "entity_id")
-    private Long entityId;
+    // =========================
+    // IP ADDRESS
+    // =========================
 
-    @Column(nullable = false)
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+
+    // =========================
+    // TIMESTAMP
+    // =========================
+
+    @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 
-    public Long getId() {
-        return id;
+
+    // =========================
+    // GETTERS AND SETTERS
+    // =========================
+
+    public Long getLogId() {
+        return logId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setLogId(Long logId) {
+        this.logId = logId;
     }
+
 
     public Long getUserId() {
         return userId;
@@ -42,6 +70,7 @@ public class AuditLog {
         this.userId = userId;
     }
 
+
     public String getAction() {
         return action;
     }
@@ -50,21 +79,15 @@ public class AuditLog {
         this.action = action;
     }
 
-    public String getEntity() {
-        return entity;
+
+    public String getIpAddress() {
+        return ipAddress;
     }
 
-    public void setEntity(String entity) {
-        this.entity = entity;
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
     }
 
-    public Long getEntityId() {
-        return entityId;
-    }
-
-    public void setEntityId(Long entityId) {
-        this.entityId = entityId;
-    }
 
     public LocalDateTime getTimestamp() {
         return timestamp;

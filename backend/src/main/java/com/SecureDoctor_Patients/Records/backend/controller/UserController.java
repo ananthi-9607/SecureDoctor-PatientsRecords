@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.SecureDoctor_Patients.Records.backend.dto.LoginRequest;
 import com.SecureDoctor_Patients.Records.backend.entity.User;
+import com.SecureDoctor_Patients.Records.backend.service.AuditLogService;
 import com.SecureDoctor_Patients.Records.backend.service.UserService;
 
 @RestController
@@ -22,13 +24,19 @@ import com.SecureDoctor_Patients.Records.backend.service.UserService;
 public class UserController {
 
     private final UserService userService;
+    private final AuditLogService auditLogService;
+
 
     // =========================
     // CONSTRUCTOR
     // =========================
 
-    public UserController(UserService userService) {
+    public UserController(
+            UserService userService,
+            AuditLogService auditLogService) {
+
         this.userService = userService;
+        this.auditLogService = auditLogService;
     }
 
 
@@ -37,25 +45,16 @@ public class UserController {
     // =========================
 
     @PostMapping
-    public ResponseEntity<?> createUser(
+    public ResponseEntity<User> createUser(
             @RequestBody User user) {
 
-        try {
+        User savedUser =
+                userService.saveUser(user);
 
-            User savedUser =
-                    userService.saveUser(user);
-
-            return new ResponseEntity<>(
-                    savedUser,
-                    HttpStatus.CREATED
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(e.getMessage());
-        }
+        return new ResponseEntity<>(
+                savedUser,
+                HttpStatus.CREATED
+        );
     }
 
 
@@ -93,20 +92,66 @@ public class UserController {
     public ResponseEntity<?> login(
             @RequestBody LoginRequest request) {
 
+        // CHECK WHETHER LOGIN API IS CALLED
+        System.out.println(
+                "LOGIN API CALLED"
+        );
+
+
+        // =========================
+        // CHECK LOGIN
+        // =========================
+
         User user =
                 userService.login(
                         request.getEmail(),
                         request.getPassword()
                 );
 
+
+        // =========================
+        // LOGIN SUCCESS
+        // =========================
+
         if (user != null) {
+
+            System.out.println(
+                    "LOGIN SUCCESS - CREATING AUDIT LOG"
+            );
+
+
+            auditLogService.logAction(
+                    user.getId(),
+                    "LOGIN SUCCESS",
+                    "127.0.0.1"
+            );
+
 
             return ResponseEntity.ok(user);
         }
 
+
+        // =========================
+        // LOGIN FAILED
+        // =========================
+
+        System.out.println(
+                "LOGIN FAILED - CREATING AUDIT LOG"
+        );
+
+
+        auditLogService.logAction(
+                null,
+                "LOGIN FAILED",
+                "127.0.0.1"
+        );
+
+
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body("Invalid email or password");
+                .body(
+                        "Invalid email or password"
+                );
     }
 
 
@@ -177,6 +222,7 @@ public class UserController {
                             userDetails.getRole()
                     );
 
+
                     return ResponseEntity.ok(
                             userService.saveUser(
                                     existingUser
@@ -209,6 +255,7 @@ public class UserController {
                     .noContent()
                     .build();
         }
+
 
         return ResponseEntity
                 .notFound()

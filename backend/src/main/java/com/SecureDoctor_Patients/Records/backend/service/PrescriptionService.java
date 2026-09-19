@@ -11,7 +11,7 @@ import java.util.List;
 public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
-    private final EncryptionService encryptionService;
+    private final AuditLogService auditLogService;
 
 
     // =========================
@@ -20,10 +20,13 @@ public class PrescriptionService {
 
     public PrescriptionService(
             PrescriptionRepository prescriptionRepository,
-            EncryptionService encryptionService) {
+            AuditLogService auditLogService) {
 
-        this.prescriptionRepository = prescriptionRepository;
-        this.encryptionService = encryptionService;
+        this.prescriptionRepository =
+                prescriptionRepository;
+
+        this.auditLogService =
+                auditLogService;
     }
 
 
@@ -35,6 +38,7 @@ public class PrescriptionService {
             Prescription prescription) {
 
         // CHECK CONSULTATION ID
+
         if (prescription.getConsultId() == null) {
 
             throw new RuntimeException(
@@ -44,6 +48,7 @@ public class PrescriptionService {
 
 
         // CHECK MEDICINE NAME
+
         if (prescription.getMedicineName() == null ||
             prescription.getMedicineName().isBlank()) {
 
@@ -54,53 +59,27 @@ public class PrescriptionService {
 
 
         // =========================
-        // ENCRYPT MEDICINE NAME 🔐
+        // SAVE PRESCRIPTION
         // =========================
 
-        prescription.setMedicineName(
-                encryptionService.encrypt(
-                        prescription.getMedicineName()
-                )
+        Prescription savedPrescription =
+                prescriptionRepository.save(
+                        prescription
+                );
+
+
+        // =========================
+        // AUDIT LOG
+        // =========================
+
+        auditLogService.logAction(
+                null,
+                "CREATE PRESCRIPTION",
+                "127.0.0.1"
         );
 
 
-        // =========================
-        // ENCRYPT DOSAGE 🔐
-        // =========================
-
-        if (prescription.getDosage() != null &&
-            !prescription.getDosage().isBlank()) {
-
-            prescription.setDosage(
-                    encryptionService.encrypt(
-                            prescription.getDosage()
-                    )
-            );
-        }
-
-
-        // =========================
-        // ENCRYPT INSTRUCTION 🔐
-        // =========================
-
-        if (prescription.getInstruction() != null &&
-            !prescription.getInstruction().isBlank()) {
-
-            prescription.setInstruction(
-                    encryptionService.encrypt(
-                            prescription.getInstruction()
-                    )
-            );
-        }
-
-
-        // =========================
-        // SAVE ENCRYPTED DATA
-        // =========================
-
-        return prescriptionRepository.save(
-                prescription
-        );
+        return savedPrescription;
     }
 
 
@@ -112,58 +91,8 @@ public class PrescriptionService {
     getPrescriptionsByConsultation(
             Integer consultId) {
 
-        List<Prescription> prescriptions =
-                prescriptionRepository
-                        .findAllByConsultId(consultId);
-
-
-        // DECRYPT ALL PRESCRIPTIONS 🔓
-        prescriptions.forEach(
-                this::decryptPrescription
-        );
-
-
-        return prescriptions;
-    }
-
-
-    // =========================
-    // DECRYPT PRESCRIPTION
-    // =========================
-
-    private void decryptPrescription(
-            Prescription prescription) {
-
-        // DECRYPT MEDICINE NAME
-        prescription.setMedicineName(
-                encryptionService.decrypt(
-                        prescription.getMedicineName()
-                )
-        );
-
-
-        // DECRYPT DOSAGE
-        if (prescription.getDosage() != null &&
-            !prescription.getDosage().isBlank()) {
-
-            prescription.setDosage(
-                    encryptionService.decrypt(
-                            prescription.getDosage()
-                    )
-            );
-        }
-
-
-        // DECRYPT INSTRUCTION
-        if (prescription.getInstruction() != null &&
-            !prescription.getInstruction().isBlank()) {
-
-            prescription.setInstruction(
-                    encryptionService.decrypt(
-                            prescription.getInstruction()
-                    )
-            );
-        }
+        return prescriptionRepository
+                .findAllByConsultId(consultId);
     }
 
 
@@ -174,6 +103,9 @@ public class PrescriptionService {
     public void deletePrescription(
             Integer prescriptId) {
 
+
+        // CHECK PRESCRIPTION EXISTS
+
         if (!prescriptionRepository
                 .existsById(prescriptId)) {
 
@@ -183,8 +115,22 @@ public class PrescriptionService {
         }
 
 
-        prescriptionRepository.deleteById(
-                prescriptId
+        // =========================
+        // DELETE
+        // =========================
+
+        prescriptionRepository
+                .deleteById(prescriptId);
+
+
+        // =========================
+        // AUDIT LOG
+        // =========================
+
+        auditLogService.logAction(
+                null,
+                "DELETE PRESCRIPTION",
+                "127.0.0.1"
         );
     }
 }
