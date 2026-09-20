@@ -25,8 +25,6 @@ function ConsultationForm({
   const [dosage, setDosage] = useState("");
   const [instruction, setInstruction] = useState("");
 
-  const [prescriptions, setPrescriptions] = useState([]);
-
   const [prescriptionLoading, setPrescriptionLoading] =
     useState(false);
 
@@ -187,25 +185,17 @@ function ConsultationForm({
         );
       }
 
-      const data =
-        await response.json();
+      // =========================
+      // PRESCRIPTION SAVED
+      // =========================
 
       console.log(
-        "Prescription saved:",
-        data
+        "Prescription saved successfully"
       );
 
-      // Add saved prescription
-      // to local list
-
-      setPrescriptions(
-        (previous) => [
-          ...previous,
-          data
-        ]
-      );
-
-      // Clear input fields
+      // =========================
+      // CLEAR INPUT FIELDS
+      // =========================
 
       setMedicineName("");
       setDosage("");
@@ -583,85 +573,6 @@ function ConsultationForm({
 
 
             {/* =========================
-                ADDED PRESCRIPTIONS
-            ========================= */}
-
-            {prescriptions.length > 0 && (
-
-              <div className="prescription-list">
-
-                <h3>
-                  Added Medicines
-                </h3>
-
-
-                {prescriptions.map(
-                  (prescription, index) => (
-
-                    <div
-                      className="prescription-card"
-                      key={
-                        prescription.prescriptId ||
-                        index
-                      }
-                    >
-
-                      <div>
-
-                        <span>
-                          MEDICINE
-                        </span>
-
-                        <strong>
-                          💊{" "}
-                          {
-                            prescription.medicineName
-                          }
-                        </strong>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          DOSAGE
-                        </span>
-
-                        <strong>
-                          {
-                            prescription.dosage
-                          }
-                        </strong>
-
-                      </div>
-
-
-                      <div>
-
-                        <span>
-                          INSTRUCTION
-                        </span>
-
-                        <strong>
-                          {
-                            prescription.instruction
-                          }
-                        </strong>
-
-                      </div>
-
-                    </div>
-
-                  )
-                )}
-
-              </div>
-
-            )}
-
-
-            {/* =========================
                 FINISH
             ========================= */}
 
@@ -693,7 +604,6 @@ function ConsultationForm({
       </main>
 
     </div>
-
   );
 }
 
