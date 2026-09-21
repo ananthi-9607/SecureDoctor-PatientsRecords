@@ -19,7 +19,7 @@ function AvailableSlots({
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   // =========================
-  // LOAD DOCTORS
+  // LOAD DOCTORS 
   // =========================
 
   useEffect(() => {
