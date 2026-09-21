@@ -2,6 +2,7 @@ package com.SecureDoctor_Patients.Records.backend;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -14,9 +15,14 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow frontend URLs
+        // Local frontend
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:5174");
+
+        // Railway deployed frontend
+        config.addAllowedOrigin(
+            "https://radiant-eagerness-production-5095.up.railway.app"
+        );
 
         // Allow headers
         config.addAllowedHeader("*");
@@ -24,7 +30,7 @@ public class CorsConfig {
         // Allow HTTP methods
         config.addAllowedMethod("*");
 
-        // Optional: credentials support
+        // Credentials
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
