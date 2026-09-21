@@ -7,6 +7,12 @@ function DoctorDashboard({
   doctorName,
   onLogout
 }) {
+  // =========================
+  // BACKEND URL
+  // =========================
+
+  const API_URL =
+    "https://securedoctor-patientsrecords-production.up.railway.app";
 
   // =========================
   // MENU STATE
@@ -66,13 +72,11 @@ function DoctorDashboard({
   // =========================
 
   const loadAppointments = async () => {
-
     try {
-
       setLoading(true);
 
       const response = await fetch(
-        `http://localhost:8080/appointments/doctor/${doctorId}`
+        `${API_URL}/appointments/doctor/${doctorId}`
       );
 
       if (!response.ok) {
@@ -90,7 +94,9 @@ function DoctorDashboard({
 
       setAppointments(data);
 
+      // =========================
       // GET UNIQUE PATIENT IDS
+      // =========================
 
       const uniquePatientIds = [
         ...new Set(
@@ -103,24 +109,22 @@ function DoctorDashboard({
         )
       ];
 
+      // =========================
       // LOAD PATIENT NAMES
+      // =========================
 
       const patientData = {};
 
       await Promise.all(
-
         uniquePatientIds.map(
           async (patientId) => {
-
             try {
-
               const patientResponse =
                 await fetch(
-                  `http://localhost:8080/users/${patientId}`
+                  `${API_URL}/users/${patientId}`
                 );
 
               if (patientResponse.ok) {
-
                 const patient =
                   await patientResponse.json();
 
@@ -128,26 +132,20 @@ function DoctorDashboard({
                   patient.fullName ||
                   "Patient";
               }
-
             } catch (error) {
-
               console.error(
                 "Unable to load patient:",
                 patientId,
                 error
               );
-
             }
-
           }
         )
-
       );
 
       setPatientNames(patientData);
 
     } catch (error) {
-
       console.error(
         "Error loading appointments:",
         error
@@ -158,11 +156,8 @@ function DoctorDashboard({
       );
 
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   // =========================
@@ -170,19 +165,15 @@ function DoctorDashboard({
   // =========================
 
   const loadAvailability = async () => {
-
     try {
-
       const response = await fetch(
-        `http://localhost:8080/availability/doctor/${doctorId}`
+        `${API_URL}/availability/doctor/${doctorId}`
       );
 
       if (!response.ok) {
-
         throw new Error(
           "Unable to load availability"
         );
-
       }
 
       const data =
@@ -196,14 +187,11 @@ function DoctorDashboard({
       setAvailability(data);
 
     } catch (error) {
-
       console.error(
         "Error loading availability:",
         error
       );
-
     }
-
   };
 
   // =========================
@@ -211,121 +199,108 @@ function DoctorDashboard({
   // =========================
 
   useEffect(() => {
-
     if (doctorId) {
-
       loadAppointments();
-
       loadAvailability();
-
     }
-
   }, [doctorId]);
 
   // =========================
   // ADD AVAILABILITY SLOT
   // =========================
 
-  const addAvailabilitySlot =
-    async (e) => {
+  const addAvailabilitySlot = async (e) => {
+    e.preventDefault();
 
-      e.preventDefault();
+    if (
+      !availabilityDate ||
+      !availabilityTime
+    ) {
+      alert(
+        "Please select date and time."
+      );
 
-      if (
-        !availabilityDate ||
-        !availabilityTime
-      ) {
+      return;
+    }
 
-        alert(
-          "Please select date and time."
+    try {
+      setAvailabilityLoading(true);
+
+      const response =
+        await fetch(
+          `${API_URL}/availability`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              doctorId: Number(doctorId),
+
+              availableDate:
+                availabilityDate,
+
+              availableTime:
+                availabilityTime
+            })
+          }
         );
 
-        return;
+      if (response.ok) {
+        const newSlot =
+          await response.json();
 
-      }
+        console.log(
+          "New availability slot:",
+          newSlot
+        );
 
-      try {
+        setAvailability(
+          (previousSlots) => [
+            ...previousSlots,
+            newSlot
+          ]
+        );
 
-        setAvailabilityLoading(true);
+        setAvailabilityDate("");
+        setAvailabilityTime("");
 
-        const response =
-          await fetch(
-            "http://localhost:8080/availability",
-            {
+        alert(
+          "Availability slot added successfully!"
+        );
 
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-
-                doctorId:
-                  doctorId,
-
-                availableDate:
-                  availabilityDate,
-
-                availableTime:
-                  availabilityTime
-
-              })
-
-            }
-          );
-
-        if (response.ok) {
-
-          const newSlot =
-            await response.json();
-
-          setAvailability(
-            (previousSlots) => [
-              ...previousSlots,
-              newSlot
-            ]
-          );
-
-          setAvailabilityDate("");
-
-          setAvailabilityTime("");
-
-          alert(
-            "Availability slot added successfully!"
-          );
-
-        } else {
-
-          const errorText =
-            await response.text();
-
-          alert(
-            errorText ||
-            "Unable to add availability slot."
-          );
-
-        }
-
-      } catch (error) {
+      } else {
+        const errorText =
+          await response.text();
 
         console.error(
           "Availability error:",
-          error
+          errorText
         );
 
         alert(
-          "Backend connection failed!"
+          errorText ||
+          "Unable to add availability slot."
         );
-
-      } finally {
-
-        setAvailabilityLoading(false);
-
       }
 
-    };
+    } catch (error) {
+      console.error(
+        "Availability error:",
+        error
+      );
+
+      alert(
+        "Backend connection failed!"
+      );
+
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
 
   // =========================
   // DELETE AVAILABILITY SLOT
@@ -344,17 +319,15 @@ function DoctorDashboard({
       }
 
       try {
-
         const response =
           await fetch(
-            `http://localhost:8080/availability/${id}`,
+            `${API_URL}/availability/${id}`,
             {
               method: "DELETE"
             }
           );
 
         if (response.ok) {
-
           setAvailability(
             (previousSlots) =>
               previousSlots.filter(
@@ -368,7 +341,6 @@ function DoctorDashboard({
           );
 
         } else {
-
           const errorText =
             await response.text();
 
@@ -376,11 +348,9 @@ function DoctorDashboard({
             errorText ||
             "Unable to delete availability slot."
           );
-
         }
 
       } catch (error) {
-
         console.error(
           "Delete availability error:",
           error
@@ -389,9 +359,7 @@ function DoctorDashboard({
         alert(
           "Backend connection failed!"
         );
-
       }
-
     };
 
   // =========================
@@ -405,17 +373,17 @@ function DoctorDashboard({
     ) => {
 
       try {
-
         const response =
           await fetch(
-            `http://localhost:8080/appointments/${appointmentId}/status?status=${newStatus}`,
+            `${API_URL}/appointments/${appointmentId}/status?status=${encodeURIComponent(
+              newStatus
+            )}`,
             {
               method: "PUT"
             }
           );
 
         if (response.ok) {
-
           const updatedAppointment =
             await response.json();
 
@@ -435,19 +403,21 @@ function DoctorDashboard({
           );
 
         } else {
-
           const errorText =
             await response.text();
+
+          console.error(
+            "Status update error:",
+            errorText
+          );
 
           alert(
             errorText ||
             "Unable to update appointment."
           );
-
         }
 
       } catch (error) {
-
         console.error(
           "Status update error:",
           error
@@ -456,9 +426,7 @@ function DoctorDashboard({
         alert(
           "Backend connection failed!"
         );
-
       }
-
     };
 
   // =========================
@@ -515,100 +483,85 @@ function DoctorDashboard({
     (status) => {
 
       if (status === "Confirmed") {
-
         return (
-          "doctor-status " +
-          "doctor-confirmed"
+          "doctor-status doctor-confirmed"
         );
-
       }
 
       if (status === "Cancelled") {
-
         return (
-          "doctor-status " +
-          "doctor-cancelled"
+          "doctor-status doctor-cancelled"
         );
-
       }
 
       return (
-        "doctor-status " +
-        "doctor-booked"
+        "doctor-status doctor-booked"
       );
-
     };
 
   // =========================
   // FORMAT DATE
   // =========================
 
-  const formatDate =
-    (date) => {
+  const formatDate = (date) => {
 
-      if (!date) {
-        return "";
+    if (!date) {
+      return "";
+    }
+
+    return new Date(
+      `${date}T00:00:00`
+    ).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
       }
-
-      return new Date(
-        `${date}T00:00:00`
-      ).toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric"
-        }
-      );
-
-    };
+    );
+  };
 
   // =========================
   // FORMAT TIME
   // =========================
 
-  const formatTime =
-    (time) => {
+  const formatTime = (time) => {
 
-      if (!time) {
-        return "";
-      }
+    if (!time) {
+      return "";
+    }
 
-      const [
-        hours,
-        minutes
-      ] =
-        time.split(":");
+    const [
+      hours,
+      minutes
+    ] = time.split(":");
 
-      const hour =
-        Number(hours);
+    const hour =
+      Number(hours);
 
-      const amPm =
-        hour >= 12
-          ? "PM"
-          : "AM";
+    const amPm =
+      hour >= 12
+        ? "PM"
+        : "AM";
 
-      const formattedHour =
-        hour % 12 || 12;
+    const formattedHour =
+      hour % 12 || 12;
 
-      return (
-        `${formattedHour}:${minutes} ${amPm}`
-      );
-
-    };
+    return (
+      `${formattedHour}:${minutes} ${amPm}`
+    );
+  };
 
   // =========================
   // CHANGE PAGE
   // =========================
 
-  const changeMenu =
-    (menu) => {
+  const changeMenu = (menu) => {
 
-      setActiveMenu(menu);
+    setActiveMenu(menu);
 
-      setProfileOpen(false);
-
-    };
+    setProfileOpen(false);
+  };
 
   // =========================
   // PAGE TITLE
@@ -620,31 +573,24 @@ function DoctorDashboard({
       activeMenu ===
       "appointments"
     ) {
-
       return "Appointments";
-
     }
 
     if (
       activeMenu ===
       "patients"
     ) {
-
       return "Patients";
-
     }
 
     if (
       activeMenu ===
       "availability"
     ) {
-
       return "Availability";
-
     }
 
     return "Doctor Dashboard";
-
   };
 
   // =========================
@@ -657,19 +603,19 @@ function DoctorDashboard({
   ) {
 
     return (
-
       <ConsultationForm
-
         appointment={
           selectedAppointment
         }
 
         onBack={() => {
+          setShowConsultationForm(
+            false
+          );
 
-          setShowConsultationForm(false);
-
-          setSelectedAppointment(null);
-
+          setSelectedAppointment(
+            null
+          );
         }}
 
         onConsultationSaved={() => {
@@ -678,18 +624,18 @@ function DoctorDashboard({
             "Consultation saved successfully!"
           );
 
-          setShowConsultationForm(false);
+          setShowConsultationForm(
+            false
+          );
 
-          setSelectedAppointment(null);
+          setSelectedAppointment(
+            null
+          );
 
           loadAppointments();
-
         }}
-
       />
-
     );
-
   }
 
   // =========================
@@ -697,10 +643,11 @@ function DoctorDashboard({
   // =========================
 
   return (
-
     <div className="doctor-dashboard-page">
 
-      {/* SIDEBAR */}
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
       <aside className="doctor-sidebar">
 
@@ -711,7 +658,6 @@ function DoctorDashboard({
           </div>
 
           <div>
-
             <h1>
               SecureDoctor
             </h1>
@@ -719,7 +665,6 @@ function DoctorDashboard({
             <p>
               Doctor Portal
             </p>
-
           </div>
 
         </div>
@@ -731,6 +676,8 @@ function DoctorDashboard({
           <p className="doctor-nav-title">
             MAIN MENU
           </p>
+
+          {/* DASHBOARD */}
 
           <button
             className={`doctor-nav-item ${
@@ -754,6 +701,8 @@ function DoctorDashboard({
 
           </button>
 
+          {/* APPOINTMENTS */}
+
           <button
             className={`doctor-nav-item ${
               activeMenu ===
@@ -775,14 +724,14 @@ function DoctorDashboard({
             Appointments
 
             {bookedAppointments > 0 && (
-
               <span className="doctor-nav-badge">
                 {bookedAppointments}
               </span>
-
             )}
 
           </button>
+
+          {/* PATIENTS */}
 
           <button
             className={`doctor-nav-item ${
@@ -805,6 +754,8 @@ function DoctorDashboard({
             Patients
 
           </button>
+
+          {/* AVAILABILITY */}
 
           <button
             className={`doctor-nav-item ${
@@ -829,6 +780,8 @@ function DoctorDashboard({
           </button>
 
         </div>
+
+        {/* SIDEBAR FOOTER */}
 
         <div className="doctor-sidebar-footer">
 
@@ -856,7 +809,9 @@ function DoctorDashboard({
 
       </aside>
 
-      {/* MAIN AREA */}
+      {/* =========================
+          MAIN AREA
+      ========================= */}
 
       <div className="doctor-main-area">
 
@@ -878,6 +833,8 @@ function DoctorDashboard({
 
           <div className="doctor-top-actions">
 
+            {/* NOTIFICATION */}
+
             <button
               className="doctor-notification"
               onClick={() =>
@@ -890,10 +847,8 @@ function DoctorDashboard({
               🔔
 
               {bookedAppointments > 0 && (
-
                 <span className="doctor-notification-dot">
                 </span>
-
               )}
 
             </button>
@@ -976,7 +931,9 @@ function DoctorDashboard({
 
                   <button
                     onClick={() =>
-                      setProfileOpen(false)
+                      setProfileOpen(
+                        false
+                      )
                     }
                   >
                     👤 My Profile
@@ -991,13 +948,9 @@ function DoctorDashboard({
                     onClick={() => {
 
                       if (onLogout) {
-
                         onLogout();
-
                       } else {
-
                         window.location.reload();
-
                       }
 
                     }}
@@ -1015,18 +968,22 @@ function DoctorDashboard({
 
         </header>
 
-        {/* MAIN CONTENT */}
+        {/* =========================
+            MAIN CONTENT
+        ========================= */}
 
         <main className="doctor-dashboard-content">
 
-          {/* =====================
+          {/* ==================================================
               DASHBOARD
-          ===================== */}
+          ================================================== */}
 
           {activeMenu ===
             "dashboard" && (
 
             <>
+
+              {/* WELCOME */}
 
               <section className="doctor-welcome-section">
 
@@ -1037,21 +994,16 @@ function DoctorDashboard({
                   </p>
 
                   <h1>
-
                     Welcome back, Dr.{" "}
-
                     {doctorName ||
                       "Doctor"} 👋
-
                   </h1>
 
                   <p className="doctor-welcome-text">
-
                     Manage appointments,
                     patients and consultation
                     availability securely
                     from one place.
-
                   </p>
 
                 </div>
@@ -1082,6 +1034,8 @@ function DoctorDashboard({
 
               <section className="doctor-stats-grid">
 
+                {/* TOTAL */}
+
                 <div className="doctor-stat-card">
 
                   <div className="doctor-stat-icon total">
@@ -1105,6 +1059,8 @@ function DoctorDashboard({
                   </div>
 
                 </div>
+
+                {/* PENDING */}
 
                 <div className="doctor-stat-card">
 
@@ -1130,6 +1086,8 @@ function DoctorDashboard({
 
                 </div>
 
+                {/* CONFIRMED */}
+
                 <div className="doctor-stat-card">
 
                   <div className="doctor-stat-icon confirmed">
@@ -1153,6 +1111,8 @@ function DoctorDashboard({
                   </div>
 
                 </div>
+
+                {/* ACTIVE SLOTS */}
 
                 <div className="doctor-stat-card">
 
@@ -1217,146 +1177,149 @@ function DoctorDashboard({
                 </div>
 
                 {!loading &&
-                  appointments.length === 0 && (
+                  appointments.length ===
+                    0 && (
 
-                  <div className="doctor-empty-state">
+                    <div className="doctor-empty-state">
 
-                    <div className="doctor-empty-icon">
-                      📅
+                      <div className="doctor-empty-icon">
+                        📅
+                      </div>
+
+                      <h3>
+                        No appointments yet
+                      </h3>
+
+                      <p>
+                        New patient appointment
+                        requests will appear here.
+                      </p>
+
                     </div>
 
-                    <h3>
-                      No appointments yet
-                    </h3>
-
-                    <p>
-                      New patient appointment
-                      requests will appear here.
-                    </p>
-
-                  </div>
-
-                )}
+                  )}
 
                 {!loading &&
-                  appointments.length > 0 && (
+                  appointments.length >
+                    0 && (
 
-                  <div className="doctor-appointment-list">
+                    <div className="doctor-appointment-list">
 
-                    {appointments
-                      .slice(0, 3)
-                      .map(
-                        (appointment) => (
+                      {appointments
+                        .slice(0, 3)
+                        .map(
+                          (appointment) => (
 
-                          <div
-                            className="doctor-appointment-card"
-                            key={
-                              appointment.appointmentId
-                            }
-                          >
+                            <div
+                              className="doctor-appointment-card"
+                              key={
+                                appointment.appointmentId
+                              }
+                            >
 
-                            <div className="doctor-patient-column">
+                              {/* PATIENT */}
 
-                              <div className="doctor-patient-avatar">
+                              <div className="doctor-patient-column">
 
-                                {(
-                                  patientNames[
-                                    appointment.patientId
-                                  ] || "P"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
+                                <div className="doctor-patient-avatar">
 
-                              </div>
-
-                              <div>
-
-                                <h3>
-
-                                  {
+                                  {(
                                     patientNames[
                                       appointment.patientId
-                                    ] || "Patient"
-                                  }
+                                    ] || "P"
+                                  )
+                                    .charAt(0)
+                                    .toUpperCase()}
 
-                                </h3>
+                                </div>
 
-                                <p>
-                                  Patient Appointment
-                                </p>
+                                <div>
+
+                                  <h3>
+                                    {
+                                      patientNames[
+                                        appointment.patientId
+                                      ] ||
+                                      "Patient"
+                                    }
+                                  </h3>
+
+                                  <p>
+                                    Patient Appointment
+                                  </p>
+
+                                </div>
 
                               </div>
 
-                            </div>
+                              {/* DATE */}
 
-                            <div className="doctor-appointment-detail">
+                              <div className="doctor-appointment-detail">
 
-                              <span>
-                                DATE
-                              </span>
-
-                              <strong>
-
-                                📅{" "}
-
-                                {formatDate(
-                                  appointment.appointmentDate
-                                )}
-
-                              </strong>
-
-                            </div>
-
-                            <div className="doctor-appointment-detail">
-
-                              <span>
-                                TIME
-                              </span>
-
-                              <strong>
-
-                                🕐{" "}
-
-                                {formatTime(
-                                  appointment.appointmentTime
-                                )}
-
-                              </strong>
-
-                            </div>
-
-                            <div className="doctor-appointment-detail">
-
-                              <span>
-                                STATUS
-                              </span>
-
-                              <div>
-
-                                <span
-                                  className={
-                                    getStatusClass(
-                                      appointment.status
-                                    )
-                                  }
-                                >
-
-                                  {appointment.status}
-
+                                <span>
+                                  DATE
                                 </span>
 
+                                <strong>
+                                  📅{" "}
+                                  {formatDate(
+                                    appointment.appointmentDate
+                                  )}
+                                </strong>
+
+                              </div>
+
+                              {/* TIME */}
+
+                              <div className="doctor-appointment-detail">
+
+                                <span>
+                                  TIME
+                                </span>
+
+                                <strong>
+                                  🕐{" "}
+                                  {formatTime(
+                                    appointment.appointmentTime
+                                  )}
+                                </strong>
+
+                              </div>
+
+                              {/* STATUS */}
+
+                              <div className="doctor-appointment-detail">
+
+                                <span>
+                                  STATUS
+                                </span>
+
+                                <div>
+
+                                  <span
+                                    className={
+                                      getStatusClass(
+                                        appointment.status
+                                      )
+                                    }
+                                  >
+                                    {
+                                      appointment.status
+                                    }
+                                  </span>
+
+                                </div>
+
                               </div>
 
                             </div>
 
-                          </div>
+                          )
+                        )}
 
-                        )
-                      )}
+                    </div>
 
-                  </div>
-
-                )}
+                  )}
 
               </section>
 
@@ -1364,9 +1327,9 @@ function DoctorDashboard({
 
           )}
 
-          {/* =====================
+          {/* ==================================================
               APPOINTMENTS
-          ===================== */}
+          ================================================== */}
 
           {activeMenu ===
             "appointments" && (
@@ -1397,7 +1360,6 @@ function DoctorDashboard({
                   onClick={() => {
 
                     loadAppointments();
-
                     loadAvailability();
 
                   }}
@@ -1423,239 +1385,234 @@ function DoctorDashboard({
               )}
 
               {!loading &&
-                appointments.length === 0 && (
+                appointments.length ===
+                  0 && (
 
-                <div className="doctor-empty-state">
+                  <div className="doctor-empty-state">
 
-                  <div className="doctor-empty-icon">
-                    📅
+                    <div className="doctor-empty-icon">
+                      📅
+                    </div>
+
+                    <h3>
+                      No appointments yet
+                    </h3>
+
+                    <p>
+                      New patient appointment
+                      requests will appear here.
+                    </p>
+
                   </div>
 
-                  <h3>
-                    No appointments yet
-                  </h3>
-
-                  <p>
-                    New patient appointment
-                    requests will appear here.
-                  </p>
-
-                </div>
-
-              )}
+                )}
 
               {!loading &&
-                appointments.length > 0 && (
+                appointments.length >
+                  0 && (
 
-                <div className="doctor-appointment-list">
+                  <div className="doctor-appointment-list">
 
-                  {appointments.map(
-                    (appointment) => (
+                    {appointments.map(
+                      (appointment) => (
 
-                      <div
-                        className="doctor-appointment-card"
-                        key={
-                          appointment.appointmentId
-                        }
-                      >
+                        <div
+                          className="doctor-appointment-card"
+                          key={
+                            appointment.appointmentId
+                          }
+                        >
 
-                        {/* PATIENT */}
+                          {/* PATIENT */}
 
-                        <div className="doctor-patient-column">
+                          <div className="doctor-patient-column">
 
-                          <div className="doctor-patient-avatar">
+                            <div className="doctor-patient-avatar">
 
-                            {(
-                              patientNames[
-                                appointment.patientId
-                              ] || "P"
-                            )
-                              .charAt(0)
-                              .toUpperCase()}
-
-                          </div>
-
-                          <div>
-
-                            <h3>
-
-                              {
+                              {(
                                 patientNames[
                                   appointment.patientId
-                                ] || "Patient"
-                              }
+                                ] || "P"
+                              )
+                                .charAt(0)
+                                .toUpperCase()}
 
-                            </h3>
+                            </div>
 
-                            <p>
-                              Patient Appointment
-                            </p>
+                            <div>
+
+                              <h3>
+                                {
+                                  patientNames[
+                                    appointment.patientId
+                                  ] ||
+                                  "Patient"
+                                }
+                              </h3>
+
+                              <p>
+                                Patient Appointment
+                              </p>
+
+                            </div>
 
                           </div>
 
-                        </div>
+                          {/* DATE */}
 
-                        {/* DATE */}
+                          <div className="doctor-appointment-detail">
 
-                        <div className="doctor-appointment-detail">
-
-                          <span>
-                            DATE
-                          </span>
-
-                          <strong>
-
-                            📅{" "}
-
-                            {formatDate(
-                              appointment.appointmentDate
-                            )}
-
-                          </strong>
-
-                        </div>
-
-                        {/* TIME */}
-
-                        <div className="doctor-appointment-detail">
-
-                          <span>
-                            TIME
-                          </span>
-
-                          <strong>
-
-                            🕐{" "}
-
-                            {formatTime(
-                              appointment.appointmentTime
-                            )}
-
-                          </strong>
-
-                        </div>
-
-                        {/* STATUS */}
-
-                        <div className="doctor-appointment-detail">
-
-                          <span>
-                            STATUS
-                          </span>
-
-                          <div>
-
-                            <span
-                              className={
-                                getStatusClass(
-                                  appointment.status
-                                )
-                              }
-                            >
-
-                              {appointment.status}
-
+                            <span>
+                              DATE
                             </span>
 
+                            <strong>
+                              📅{" "}
+                              {formatDate(
+                                appointment.appointmentDate
+                              )}
+                            </strong>
+
+                          </div>
+
+                          {/* TIME */}
+
+                          <div className="doctor-appointment-detail">
+
+                            <span>
+                              TIME
+                            </span>
+
+                            <strong>
+                              🕐{" "}
+                              {formatTime(
+                                appointment.appointmentTime
+                              )}
+                            </strong>
+
+                          </div>
+
+                          {/* STATUS */}
+
+                          <div className="doctor-appointment-detail">
+
+                            <span>
+                              STATUS
+                            </span>
+
+                            <div>
+
+                              <span
+                                className={
+                                  getStatusClass(
+                                    appointment.status
+                                  )
+                                }
+                              >
+                                {
+                                  appointment.status
+                                }
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                          {/* ACTIONS */}
+
+                          <div className="doctor-card-actions">
+
+                            {/* BOOKED */}
+
+                            {appointment.status ===
+                              "Booked" && (
+
+                              <>
+
+                                <button
+                                  className="doctor-confirm-button"
+                                  onClick={() =>
+                                    updateAppointmentStatus(
+                                      appointment.appointmentId,
+                                      "Confirmed"
+                                    )
+                                  }
+                                >
+                                  ✓ Confirm
+                                </button>
+
+                                <button
+                                  className="doctor-cancel-button"
+                                  onClick={() =>
+                                    updateAppointmentStatus(
+                                      appointment.appointmentId,
+                                      "Cancelled"
+                                    )
+                                  }
+                                >
+                                  Cancel
+                                </button>
+
+                              </>
+
+                            )}
+
+                            {/* CONFIRMED */}
+
+                            {appointment.status ===
+                              "Confirmed" && (
+
+                              <button
+                                className="doctor-confirmed-button"
+                                onClick={() => {
+
+                                  setSelectedAppointment(
+                                    appointment
+                                  );
+
+                                  setShowConsultationForm(
+                                    true
+                                  );
+
+                                }}
+                              >
+                                Start Consultation
+                              </button>
+
+                            )}
+
+                            {/* CANCELLED */}
+
+                            {appointment.status ===
+                              "Cancelled" && (
+
+                              <button
+                                className="doctor-cancelled-button"
+                                disabled
+                              >
+                                Cancelled
+                              </button>
+
+                            )}
+
                           </div>
 
                         </div>
 
-                        {/* ACTIONS */}
+                      )
+                    )}
 
-                        <div className="doctor-card-actions">
+                  </div>
 
-                          {/* BOOKED */}
-
-                          {appointment.status ===
-                            "Booked" && (
-
-                            <>
-
-                              <button
-                                className="doctor-confirm-button"
-                                onClick={() =>
-                                  updateAppointmentStatus(
-                                    appointment.appointmentId,
-                                    "Confirmed"
-                                  )
-                                }
-                              >
-                                ✓ Confirm
-                              </button>
-
-                              <button
-                                className="doctor-cancel-button"
-                                onClick={() =>
-                                  updateAppointmentStatus(
-                                    appointment.appointmentId,
-                                    "Cancelled"
-                                  )
-                                }
-                              >
-                                Cancel
-                              </button>
-
-                            </>
-
-                          )}
-
-                          {/* CONFIRMED */}
-
-                          {appointment.status ===
-                            "Confirmed" && (
-
-                            <button
-                              className="doctor-confirmed-button"
-                              onClick={() => {
-
-                                setSelectedAppointment(
-                                  appointment
-                                );
-
-                                setShowConsultationForm(
-                                  true
-                                );
-
-                              }}
-                            >
-                              Start Consultation
-                            </button>
-
-                          )}
-
-                          {/* CANCELLED */}
-
-                          {appointment.status ===
-                            "Cancelled" && (
-
-                            <button
-                              className="doctor-cancelled-button"
-                              disabled
-                            >
-                              Cancelled
-                            </button>
-
-                          )}
-
-                        </div>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              )}
+                )}
 
             </section>
 
           )}
 
-          {/* =====================
+          {/* ==================================================
               PATIENTS
-          ===================== */}
+          ================================================== */}
 
           {activeMenu ===
             "patients" && (
@@ -1711,171 +1668,172 @@ function DoctorDashboard({
               )}
 
               {!loading &&
-                uniquePatients.length === 0 && (
+                uniquePatients.length ===
+                  0 && (
 
-                <div className="doctor-empty-state">
+                  <div className="doctor-empty-state">
 
-                  <div className="doctor-empty-icon">
-                    👥
+                    <div className="doctor-empty-icon">
+                      👥
+                    </div>
+
+                    <h3>
+                      No patients yet
+                    </h3>
+
+                    <p>
+                      Patients will appear here
+                      after booking an appointment.
+                    </p>
+
                   </div>
 
-                  <h3>
-                    No patients yet
-                  </h3>
-
-                  <p>
-                    Patients will appear here
-                    after booking an appointment.
-                  </p>
-
-                </div>
-
-              )}
+                )}
 
               {!loading &&
-                uniquePatients.length > 0 && (
+                uniquePatients.length >
+                  0 && (
 
-                <div className="doctor-appointment-list">
+                  <div className="doctor-appointment-list">
 
-                  {uniquePatients.map(
-                    (patientId) => {
+                    {uniquePatients.map(
+                      (patientId) => {
 
-                      const patientAppointments =
-                        appointments.filter(
-                          (appointment) =>
-                            appointment.patientId ===
-                            patientId
-                        );
+                        const patientAppointments =
+                          appointments.filter(
+                            (appointment) =>
+                              appointment.patientId ===
+                              patientId
+                          );
 
-                      const latestAppointment =
-                        patientAppointments[0];
+                        const latestAppointment =
+                          patientAppointments[0];
 
-                      return (
+                        return (
 
-                        <div
-                          className="doctor-appointment-card"
-                          key={patientId}
-                        >
+                          <div
+                            className="doctor-appointment-card"
+                            key={patientId}
+                          >
 
-                          <div className="doctor-patient-column">
+                            {/* PATIENT */}
 
-                            <div className="doctor-patient-avatar">
+                            <div className="doctor-patient-column">
 
-                              {(
-                                patientNames[
-                                  patientId
-                                ] || "P"
-                              )
-                                .charAt(0)
-                                .toUpperCase()}
+                              <div className="doctor-patient-avatar">
 
-                            </div>
-
-                            <div>
-
-                              <h3>
-
-                                {
+                                {(
                                   patientNames[
                                     patientId
-                                  ] || "Patient"
-                                }
+                                  ] || "P"
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
 
-                              </h3>
+                              </div>
 
-                              <p>
-                                Patient ID:{" "}
-                                {patientId}
-                              </p>
+                              <div>
 
-                            </div>
-
-                          </div>
-
-                          <div className="doctor-appointment-detail">
-
-                            <span>
-                              APPOINTMENTS
-                            </span>
-
-                            <strong>
-
-                              {
-                                patientAppointments.length
-                              }
-
-                            </strong>
-
-                          </div>
-
-                          <div className="doctor-appointment-detail">
-
-                            <span>
-                              LATEST DATE
-                            </span>
-
-                            <strong>
-
-                              📅{" "}
-
-                              {latestAppointment
-                                ? formatDate(
-                                    latestAppointment.appointmentDate
-                                  )
-                                : "-"}
-
-                            </strong>
-
-                          </div>
-
-                          <div className="doctor-appointment-detail">
-
-                            <span>
-                              STATUS
-                            </span>
-
-                            <div>
-
-                              {latestAppointment && (
-
-                                <span
-                                  className={
-                                    getStatusClass(
-                                      latestAppointment.status
-                                    )
-                                  }
-                                >
-
+                                <h3>
                                   {
-                                    latestAppointment.status
+                                    patientNames[
+                                      patientId
+                                    ] ||
+                                    "Patient"
                                   }
+                                </h3>
 
-                                </span>
+                                <p>
+                                  Patient ID:{" "}
+                                  {patientId}
+                                </p>
 
-                              )}
+                              </div>
+
+                            </div>
+
+                            {/* APPOINTMENTS */}
+
+                            <div className="doctor-appointment-detail">
+
+                              <span>
+                                APPOINTMENTS
+                              </span>
+
+                              <strong>
+                                {
+                                  patientAppointments.length
+                                }
+                              </strong>
+
+                            </div>
+
+                            {/* LATEST DATE */}
+
+                            <div className="doctor-appointment-detail">
+
+                              <span>
+                                LATEST DATE
+                              </span>
+
+                              <strong>
+                                📅{" "}
+                                {latestAppointment
+                                  ? formatDate(
+                                      latestAppointment.appointmentDate
+                                    )
+                                  : "-"}
+                              </strong>
+
+                            </div>
+
+                            {/* STATUS */}
+
+                            <div className="doctor-appointment-detail">
+
+                              <span>
+                                STATUS
+                              </span>
+
+                              <div>
+
+                                {latestAppointment && (
+
+                                  <span
+                                    className={
+                                      getStatusClass(
+                                        latestAppointment.status
+                                      )
+                                    }
+                                  >
+                                    {
+                                      latestAppointment.status
+                                    }
+                                  </span>
+
+                                )}
+
+                              </div>
 
                             </div>
 
                           </div>
 
-                        </div>
+                        );
+                      }
+                    )}
 
-                      );
+                  </div>
 
-                    }
-                  )}
-
-                </div>
-
-              )}
+                )}
 
             </section>
 
           )}
 
-          {/* =====================
+          {/* ==================================================
               AVAILABILITY
-          ===================== */}
+          ================================================== */}
 
           {activeMenu ===
             "availability" && (
@@ -2017,7 +1975,8 @@ function DoctorDashboard({
 
               <div className="availability-slots-container">
 
-                {availability.length === 0 && (
+                {availability.length ===
+                  0 && (
 
                   <div className="availability-empty-state">
 
@@ -2038,7 +1997,8 @@ function DoctorDashboard({
 
                 )}
 
-                {availability.length > 0 && (
+                {availability.length >
+                  0 && (
 
                   <div className="availability-slots-grid">
 
@@ -2063,21 +2023,16 @@ function DoctorDashboard({
                             </span>
 
                             <h3>
-
                               {formatDate(
                                 slot.availableDate
                               )}
-
                             </h3>
 
                             <p>
-
                               🕐{" "}
-
                               {formatTime(
                                 slot.availableTime
                               )}
-
                             </p>
 
                           </div>
@@ -2091,11 +2046,9 @@ function DoctorDashboard({
                                   : "slot-status booked"
                               }
                             >
-
                               {slot.isAvailable
                                 ? "Available"
                                 : "Booked"}
-
                             </span>
 
                             {slot.isAvailable && (
@@ -2136,9 +2089,7 @@ function DoctorDashboard({
       </div>
 
     </div>
-
   );
-
 }
 
 export default DoctorDashboard;

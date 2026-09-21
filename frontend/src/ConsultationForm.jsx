@@ -49,24 +49,39 @@ function ConsultationForm({
 
     try {
       const consultationData = {
-        appointmentId: appointment.appointmentId,
+        appointmentId:
+          appointment.appointmentId ??
+          appointment.appointment_id ??
+          appointment.id,
+
         diagnosis: diagnosis,
+
         encryptedNotes: notes
       };
 
+      console.log(
+        "Saving consultation:",
+        consultationData
+      );
+
       const response = await fetch(
-        "http://localhost:8080/consultations",
+        "https://securedoctor-patientsrecords-production.up.railway.app/consultations",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(consultationData)
+
+          body: JSON.stringify(
+            consultationData
+          )
         }
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText =
+          await response.text();
 
         console.error(
           "Consultation error:",
@@ -78,7 +93,8 @@ function ConsultationForm({
         );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       console.log(
         "Consultation saved:",
@@ -89,7 +105,14 @@ function ConsultationForm({
       // GET CONSULTATION ID
       // =========================
 
-      setConsultationId(data.consultId);
+      const newConsultationId =
+        data.consultId ??
+        data.consult_id ??
+        data.id;
+
+      setConsultationId(
+        newConsultationId
+      );
 
       alert(
         "Consultation saved successfully! Now add prescription."
@@ -115,7 +138,6 @@ function ConsultationForm({
   // =========================
 
   const addPrescription = async () => {
-
     if (!consultationId) {
       alert(
         "Consultation ID is missing."
@@ -147,16 +169,23 @@ function ConsultationForm({
     setPrescriptionLoading(true);
 
     try {
-
       const prescriptionData = {
         consultId: consultationId,
+
         medicineName: medicineName,
+
         dosage: dosage,
+
         instruction: instruction
       };
 
+      console.log(
+        "Saving prescription:",
+        prescriptionData
+      );
+
       const response = await fetch(
-        "http://localhost:8080/prescriptions",
+        "https://securedoctor-patientsrecords-production.up.railway.app/prescriptions",
         {
           method: "POST",
 
@@ -171,7 +200,6 @@ function ConsultationForm({
       );
 
       if (!response.ok) {
-
         const errorText =
           await response.text();
 
@@ -185,12 +213,12 @@ function ConsultationForm({
         );
       }
 
-      // =========================
-      // PRESCRIPTION SAVED
-      // =========================
+      const data =
+        await response.json();
 
       console.log(
-        "Prescription saved successfully"
+        "Prescription saved:",
+        data
       );
 
       // =========================
@@ -206,7 +234,6 @@ function ConsultationForm({
       );
 
     } catch (error) {
-
       console.error(
         "Save prescription error:",
         error
@@ -217,7 +244,6 @@ function ConsultationForm({
       );
 
     } finally {
-
       setPrescriptionLoading(
         false
       );
@@ -229,7 +255,6 @@ function ConsultationForm({
   // =========================
 
   const finishConsultation = () => {
-
     if (onConsultationSaved) {
       onConsultationSaved({
         consultId: consultationId
@@ -237,8 +262,11 @@ function ConsultationForm({
     }
   };
 
-  return (
+  // =========================
+  // UI
+  // =========================
 
+  return (
     <div className="consultation-page">
 
       {/* =========================
@@ -312,7 +340,6 @@ function ConsultationForm({
           <div className="appointment-info-grid">
 
             <div>
-
               <span>
                 Patient ID
               </span>
@@ -320,12 +347,10 @@ function ConsultationForm({
               <strong>
                 {appointment.patientId}
               </strong>
-
             </div>
 
 
             <div>
-
               <span>
                 Appointment Date
               </span>
@@ -333,12 +358,10 @@ function ConsultationForm({
               <strong>
                 {appointment.appointmentDate}
               </strong>
-
             </div>
 
 
             <div>
-
               <span>
                 Appointment Time
               </span>
@@ -346,7 +369,6 @@ function ConsultationForm({
               <strong>
                 {appointment.appointmentTime}
               </strong>
-
             </div>
 
           </div>

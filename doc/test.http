@@ -139,3 +139,5 @@ Content-Type: application/json
 
 ### Get Prescriptions
 GET http://localhost:8080/prescriptions/consultation/4
+###
+http://localhost:8080/users

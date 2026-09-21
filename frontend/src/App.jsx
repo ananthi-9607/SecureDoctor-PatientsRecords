@@ -79,7 +79,7 @@ function App() {
       try {
 
         const response = await fetch(
-          "http://localhost:8080/users",
+          "https://securedoctor-patientsrecords-production.up.railway.app/users",
           {
             method: "POST",
 
@@ -169,7 +169,7 @@ function App() {
       try {
 
         const response = await fetch(
-          "http://localhost:8080/users/login",
+         "https://securedoctor-patientsrecords-production.up.railway.app/users/login",
           {
             method: "POST",
 

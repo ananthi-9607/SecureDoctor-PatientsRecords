@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import "./MyAppointments.css";
 
+const BACKEND_URL =
+  "https://securedoctor-patientsrecords-production.up.railway.app";
+
 function MyAppointments({
   patientId,
   patientName,
@@ -24,7 +27,7 @@ function MyAppointments({
         setLoading(true);
 
         const response = await fetch(
-          `http://localhost:8080/appointments/patient/${patientId}`
+          `${BACKEND_URL}/appointments/patient/${patientId}`
         );
 
         if (response.ok) {
@@ -40,7 +43,8 @@ function MyAppointments({
           );
         } else {
           console.error(
-            "Failed to load appointments"
+            "Failed to load appointments:",
+            response.status
           );
 
           setAppointments([]);
@@ -97,14 +101,11 @@ function MyAppointments({
     try {
       return new Date(
         `${date}T00:00:00`
-      ).toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }
-      );
+      ).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
     } catch {
       return date;
     }
@@ -223,7 +224,6 @@ function MyAppointments({
 
           </button>
 
-
           {/* BOOK APPOINTMENT */}
 
           <button
@@ -238,7 +238,6 @@ function MyAppointments({
             Book Appointment
 
           </button>
-
 
           {/* MY CONSULTATIONS */}
 
@@ -256,7 +255,6 @@ function MyAppointments({
           </button>
 
         </nav>
-
 
         <div className="sidebar-bottom">
 
@@ -284,7 +282,6 @@ function MyAppointments({
 
       </aside>
 
-
       {/* =========================
           MAIN AREA
       ========================= */}
@@ -307,16 +304,12 @@ function MyAppointments({
 
           </div>
 
-
           <div className="header-actions">
 
             <button className="notification-button">
               🔔
-
               <span className="notification-dot"></span>
-
             </button>
-
 
             {/* PROFILE */}
 
@@ -353,7 +346,6 @@ function MyAppointments({
 
               </button>
 
-
               {/* PROFILE DROPDOWN */}
 
               {showProfileMenu && (
@@ -380,9 +372,7 @@ function MyAppointments({
 
                   </div>
 
-
                   <div className="dropdown-line"></div>
-
 
                   {/* MY PROFILE */}
 
@@ -390,13 +380,11 @@ function MyAppointments({
                     👤 My Profile
                   </button>
 
-
                   {/* SETTINGS */}
 
                   <button>
                     ⚙ Settings
                   </button>
-
 
                   {/* LOGOUT */}
 
@@ -416,7 +404,6 @@ function MyAppointments({
           </div>
 
         </header>
-
 
         {/* =========================
             CONTENT
@@ -449,7 +436,6 @@ function MyAppointments({
               </p>
 
             </div>
-
 
             <div className="hero-visual">
 
@@ -485,7 +471,6 @@ function MyAppointments({
 
           </section>
 
-
           {/* =========================
               STATISTICS
           ========================= */}
@@ -516,7 +501,6 @@ function MyAppointments({
 
             </div>
 
-
             <div className="patient-stat-card">
 
               <div className="stat-icon-container confirmed">
@@ -541,7 +525,6 @@ function MyAppointments({
 
             </div>
 
-
             <div className="patient-stat-card">
 
               <div className="stat-icon-container booked">
@@ -565,7 +548,6 @@ function MyAppointments({
               </div>
 
             </div>
-
 
             <div className="patient-stat-card">
 
@@ -593,9 +575,8 @@ function MyAppointments({
 
           </section>
 
-
           {/* =========================
-              APPOINTMENTS HEADER
+              APPOINTMENTS
           ========================= */}
 
           <section className="appointments-dashboard-section">
@@ -619,18 +600,14 @@ function MyAppointments({
 
               </div>
 
-
               <button
                 className="outline-book-button"
                 onClick={onBookAppointment}
               >
-
                 + Book Appointment
-
               </button>
 
             </div>
-
 
             {/* LOADING */}
 
@@ -659,7 +636,6 @@ function MyAppointments({
 
             )}
 
-
             {/* NO APPOINTMENTS */}
 
             {!loading &&
@@ -685,15 +661,12 @@ function MyAppointments({
                     className="primary-appointment-button"
                     onClick={onBookAppointment}
                   >
-
                     + Book Your First Appointment
-
                   </button>
 
                 </div>
 
               )}
-
 
             {/* APPOINTMENT LIST */}
 
@@ -742,7 +715,6 @@ function MyAppointments({
 
                         </div>
 
-
                         {/* DATE */}
 
                         <div className="appointment-info-modern">
@@ -760,7 +732,6 @@ function MyAppointments({
 
                         </div>
 
-
                         {/* TIME */}
 
                         <div className="appointment-info-modern">
@@ -777,7 +748,6 @@ function MyAppointments({
                           </strong>
 
                         </div>
-
 
                         {/* STATUS */}
 

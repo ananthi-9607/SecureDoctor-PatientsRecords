@@ -34,7 +34,7 @@ function Appointment({ patientId, patientName }) {
       try {
 
         const response = await fetch(
-          "http://localhost:8080/users/doctors"
+          "https://securedoctor-patientsrecords-production.up.railway.app/users/doctors"
         );
 
         if (response.ok) {
@@ -47,13 +47,10 @@ function Appointment({ patientId, patientName }) {
 
         } else {
 
-          console.error(
-            "Failed to fetch doctors"
-          );
+          console.error("Failed to fetch doctors");
 
-          alert(
-            "Unable to load doctors."
-          );
+          alert("Unable to load doctors.");
+
         }
 
       } catch (error) {
@@ -63,10 +60,10 @@ function Appointment({ patientId, patientName }) {
           error
         );
 
-        alert(
-          "Backend connection failed!"
-        );
+        alert("Backend connection failed!");
+
       }
+
     };
 
     fetchDoctors();
@@ -87,11 +84,10 @@ function Appointment({ patientId, patientName }) {
 
     if (!doctorId) {
 
-      alert(
-        "Please select a doctor."
-      );
+      alert("Please select a doctor.");
 
       return;
+
     }
 
 
@@ -104,13 +100,14 @@ function Appointment({ patientId, patientName }) {
       );
 
       return;
+
     }
 
 
     try {
 
       const response = await fetch(
-        "http://localhost:8080/appointments",
+        "https://securedoctor-patientsrecords-production.up.railway.app/appointments",
         {
           method: "POST",
 
@@ -132,6 +129,7 @@ function Appointment({ patientId, patientName }) {
             status,
 
           }),
+
         }
       );
 
@@ -168,19 +166,19 @@ function Appointment({ patientId, patientName }) {
 
       } else {
 
+        const errorText =
+          await response.text();
 
-  const errorText =
-    await response.text();
+        console.error(
+          "Appointment failed:",
+          errorText
+        );
 
-  console.error(
-    "Appointment failed:",
-    errorText
-  );
+        alert(
+          "Appointment booking failed!"
+        );
 
-  alert(
-     "Appointment booking failed!"
-  );
-}
+      }
 
 
     } catch (error) {
@@ -193,7 +191,9 @@ function Appointment({ patientId, patientName }) {
       alert(
         "Backend connection failed!"
       );
+
     }
+
   };
 
 
@@ -370,7 +370,9 @@ function Appointment({ patientId, patientName }) {
       </div>
 
     </div>
+
   );
+
 }
 
 export default Appointment;

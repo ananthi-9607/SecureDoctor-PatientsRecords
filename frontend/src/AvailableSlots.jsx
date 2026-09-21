@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import "./AvailableSlots.css";
 
@@ -7,6 +6,7 @@ function AvailableSlots({
   onBack,
   onBookingSuccess
 }) {
+
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
@@ -18,15 +18,27 @@ function AvailableSlots({
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // =========================
-  // LOAD DOCTORS 
-  // =========================
+
+  // ==================================================
+  // RAILWAY BACKEND URL
+  // ==================================================
+
+  const BACKEND_URL =
+    "https://securedoctor-patientsrecords-production.up.railway.app";
+
+
+  // ==================================================
+  // LOAD DOCTORS
+  // ==================================================
 
   useEffect(() => {
+
     const fetchDoctors = async () => {
+
       try {
+
         const response = await fetch(
-          "http://localhost:8080/users/doctors"
+          `${BACKEND_URL}/users/doctors`
         );
 
         if (!response.ok) {
@@ -54,6 +66,7 @@ function AvailableSlots({
         setLoadingDoctors(false);
 
       }
+
     };
 
     fetchDoctors();
@@ -61,9 +74,9 @@ function AvailableSlots({
   }, []);
 
 
-  // =========================
+  // ==================================================
   // LOAD DOCTOR AVAILABILITY
-  // =========================
+  // ==================================================
 
   const loadDoctorSlots = async (doctor) => {
 
@@ -84,13 +97,21 @@ function AvailableSlots({
         doctor
       );
 
+      // Get doctor ID safely
+
+      const doctorId =
+        doctor.userId ??
+        doctor.user_id ??
+        doctor.id;
+
       console.log(
         "Doctor ID:",
-        doctor.id
+        doctorId
       );
 
+
       const response = await fetch(
-        `http://localhost:8080/availability/doctor/${doctor.id}`
+        `${BACKEND_URL}/availability/doctor/${doctorId}`
       );
 
       if (!response.ok) {
@@ -122,12 +143,13 @@ function AvailableSlots({
       setLoadingSlots(false);
 
     }
+
   };
 
 
-  // =========================
+  // ==================================================
   // UNIQUE AVAILABLE DATES
-  // =========================
+  // ==================================================
 
   const availableDates = [
     ...new Set(
@@ -144,9 +166,9 @@ function AvailableSlots({
   ];
 
 
-  // =========================
+  // ==================================================
   // FILTER TIME SLOTS
-  // =========================
+  // ==================================================
 
   const availableTimes = slots.filter(
     (slot) =>
@@ -155,9 +177,9 @@ function AvailableSlots({
   );
 
 
-  // =========================
+  // ==================================================
   // BOOK APPOINTMENT
-  // =========================
+  // ==================================================
 
   const bookAppointment = async () => {
 
@@ -170,6 +192,7 @@ function AvailableSlots({
       return;
     }
 
+
     if (!selectedDate) {
 
       alert(
@@ -178,6 +201,7 @@ function AvailableSlots({
 
       return;
     }
+
 
     if (!selectedTime) {
 
@@ -188,28 +212,53 @@ function AvailableSlots({
       return;
     }
 
+
+    if (!patientId) {
+
+      alert(
+        "Patient information not found. Please login again."
+      );
+
+      return;
+    }
+
+
     try {
+
+      // Get doctor ID safely
+
+      const doctorId =
+        selectedDoctor.userId ??
+        selectedDoctor.user_id ??
+        selectedDoctor.id;
+
 
       const appointmentData = {
 
-        patientId: patientId,
+        patientId: Number(patientId),
 
-        doctorId: selectedDoctor.id,
+        doctorId: Number(doctorId),
 
         appointmentDate: selectedDate,
 
-        appointmentTime: selectedTime,
+        appointmentTime:
+          selectedTime.length === 5
+            ? selectedTime + ":00"
+            : selectedTime,
 
         status: "Booked"
+
       };
+
 
       console.log(
         "Booking appointment:",
         appointmentData
       );
 
+
       const response = await fetch(
-        "http://localhost:8080/appointments",
+        `${BACKEND_URL}/appointments`,
         {
           method: "POST",
 
@@ -221,10 +270,50 @@ function AvailableSlots({
           body: JSON.stringify(
             appointmentData
           )
+
         }
       );
 
-      if (!response.ok) {
+
+      // ==================================================
+      // BOOKING SUCCESS
+      // ==================================================
+
+      if (response.ok) {
+
+        const data =
+          await response.json();
+
+        console.log(
+          "Appointment created:",
+          data
+        );
+
+        alert(
+          "Appointment booked successfully!"
+        );
+
+
+        // Clear selections
+
+        setSelectedDoctor(null);
+
+        setSlots([]);
+
+        setSelectedDate("");
+
+        setSelectedTime("");
+
+
+        // Go back to dashboard
+
+        if (onBookingSuccess) {
+
+          onBookingSuccess();
+
+        }
+
+      } else {
 
         const errorText =
           await response.text();
@@ -234,18 +323,13 @@ function AvailableSlots({
           errorText
         );
 
-        throw new Error(
-          "Booking failed"
+        alert(
+          errorText ||
+          "Unable to book appointment."
         );
+
       }
 
-      alert(
-        "Appointment booked successfully!"
-      );
-
-      if (onBookingSuccess) {
-        onBookingSuccess();
-      }
 
     } catch (error) {
 
@@ -255,21 +339,26 @@ function AvailableSlots({
       );
 
       alert(
-        "Unable to book appointment."
+        "Unable to connect to backend."
       );
 
     }
+
   };
 
+
+  // ==================================================
+  // UI
+  // ==================================================
 
   return (
 
     <div className="available-slots-page">
 
 
-      {/* ========================= */}
-      {/* HEADER */}
-      {/* ========================= */}
+      {/* ==================================================
+          HEADER
+      ================================================== */}
 
       <header className="slots-header">
 
@@ -304,16 +393,16 @@ function AvailableSlots({
       </header>
 
 
-      {/* ========================= */}
-      {/* MAIN CONTENT */}
-      {/* ========================= */}
+      {/* ==================================================
+          MAIN CONTENT
+      ================================================== */}
 
       <main className="slots-container">
 
 
-        {/* ========================= */}
-        {/* HERO */}
-        {/* ========================= */}
+        {/* ==================================================
+            HERO
+        ================================================== */}
 
         <section className="slots-hero">
 
@@ -361,9 +450,9 @@ function AvailableSlots({
         </section>
 
 
-        {/* ========================= */}
-        {/* STEP 1 - DOCTOR */}
-        {/* ========================= */}
+        {/* ==================================================
+            STEP 1 - DOCTOR
+        ================================================== */}
 
         <section className="booking-section">
 
@@ -401,55 +490,74 @@ function AvailableSlots({
 
             <div className="doctor-grid">
 
-              {doctors.map((doctor) => (
+              {doctors.map((doctor) => {
 
-                <button
-                  key={doctor.id}
-
-                  className={`doctor-card ${
-                    selectedDoctor?.id === doctor.id
-                      ? "selected"
-                      : ""
-                  }`}
-
-                  onClick={() =>
-                    loadDoctorSlots(doctor)
-                  }
-                >
-
-                  <div className="doctor-avatar">
-
-                    {doctor.fullName
-                      ?.charAt(0)
-                      .toUpperCase()}
-
-                  </div>
+                const doctorId =
+                  doctor.userId ??
+                  doctor.user_id ??
+                  doctor.id;
 
 
-                  <div className="doctor-details">
+                return (
 
-                    <h3>
-                      Dr. {doctor.fullName}
-                    </h3>
+                  <button
+                    key={doctorId}
 
-                    <p>
-                      Medical Professional
-                    </p>
+                    className={`doctor-card ${
+                      (
+                        selectedDoctor?.userId ??
+                        selectedDoctor?.user_id ??
+                        selectedDoctor?.id
+                      ) === doctorId
+                        ? "selected"
+                        : ""
+                    }`}
 
-                  </div>
+                    onClick={() =>
+                      loadDoctorSlots(doctor)
+                    }
+
+                  >
+
+                    <div className="doctor-avatar">
+
+                      {doctor.fullName
+                        ?.charAt(0)
+                        .toUpperCase()}
+
+                    </div>
 
 
-                  <span className="select-indicator">
+                    <div className="doctor-details">
 
-                    {selectedDoctor?.id === doctor.id
-                      ? "✓"
-                      : "+"}
+                      <h3>
+                        Dr. {doctor.fullName}
+                      </h3>
 
-                  </span>
+                      <p>
+                        Medical Professional
+                      </p>
 
-                </button>
+                    </div>
 
-              ))}
+
+                    <span className="select-indicator">
+
+                      {(
+                        selectedDoctor?.userId ??
+                        selectedDoctor?.user_id ??
+                        selectedDoctor?.id
+                      ) === doctorId
+                        ? "✓"
+                        : "+"}
+
+                    </span>
+
+                  </button>
+
+                );
+
+              })}
 
             </div>
 
@@ -458,9 +566,9 @@ function AvailableSlots({
         </section>
 
 
-        {/* ========================= */}
-        {/* STEP 2 - DATE */}
-        {/* ========================= */}
+        {/* ==================================================
+            STEP 2 - DATE
+        ================================================== */}
 
         {selectedDoctor && (
 
@@ -500,62 +608,64 @@ function AvailableSlots({
             {!loadingSlots &&
               availableDates.length === 0 && (
 
-              <div className="no-slots">
+                <div className="no-slots">
 
-                No available slots for this doctor.
+                  No available slots
+                  for this doctor.
 
-              </div>
+                </div>
 
-            )}
+              )}
 
 
             {!loadingSlots &&
               availableDates.length > 0 && (
 
-              <div className="date-grid">
+                <div className="date-grid">
 
-                {availableDates.map((date) => (
+                  {availableDates.map((date) => (
 
-                  <button
-                    key={date}
+                    <button
+                      key={date}
 
-                    className={`date-card ${
-                      selectedDate === date
-                        ? "selected"
-                        : ""
-                    }`}
+                      className={`date-card ${
+                        selectedDate === date
+                          ? "selected"
+                          : ""
+                      }`}
 
-                    onClick={() => {
+                      onClick={() => {
 
-                      setSelectedDate(date);
+                        setSelectedDate(date);
 
-                      setSelectedTime("");
+                        setSelectedTime("");
 
-                    }}
-                  >
+                      }}
 
-                    📅
+                    >
 
-                    <span>
-                      {date}
-                    </span>
+                      📅
 
-                  </button>
+                      <span>
+                        {date}
+                      </span>
 
-                ))}
+                    </button>
 
-              </div>
+                  ))}
 
-            )}
+                </div>
+
+              )}
 
           </section>
 
         )}
 
 
-        {/* ========================= */}
-        {/* STEP 3 - TIME */}
-        {/* ========================= */}
+        {/* ==================================================
+            STEP 3 - TIME
+        ================================================== */}
 
         {selectedDate && (
 
@@ -616,6 +726,7 @@ function AvailableSlots({
                         slot.availableTime
                       )
                     }
+
                   >
 
                     🕐 {slot.availableTime}
@@ -633,9 +744,9 @@ function AvailableSlots({
         )}
 
 
-        {/* ========================= */}
-        {/* BOOKING SUMMARY */}
-        {/* ========================= */}
+        {/* ==================================================
+            BOOKING SUMMARY
+        ================================================== */}
 
         {selectedDoctor &&
           selectedDate &&
@@ -684,6 +795,7 @@ function AvailableSlots({
     </div>
 
   );
+
 }
 
 export default AvailableSlots;
