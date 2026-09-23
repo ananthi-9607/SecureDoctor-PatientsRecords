@@ -19,20 +19,13 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder =
             new BCryptPasswordEncoder();
 
-
-    // =========================
-    // CONSTRUCTOR
-    // =========================
-
     public UserService(UserRepository userRepository) {
-
         this.userRepository =
                 Objects.requireNonNull(
                         userRepository,
                         "userRepository must not be null"
                 );
     }
-
 
     // =========================
     // REGISTER / SAVE USER
@@ -46,18 +39,36 @@ public class UserService {
                 "user must not be null"
         );
 
-
-        // =========================
-        // CHECK DUPLICATE EMAIL
-        // =========================
-
         if (userRepository.existsByEmail(user.getEmail())) {
-
             throw new IllegalArgumentException(
                     "Email already registered"
             );
         }
 
+        // =========================
+        // ROLE VALIDATION
+        // =========================
+
+        if (user.getRole() == null ||
+                user.getRole().isBlank()) {
+
+            user.setRole("Patient");
+        }
+
+        // =========================
+        // DOCTOR VERIFICATION
+        // =========================
+
+        if ("Doctor".equalsIgnoreCase(user.getRole())) {
+
+            // New doctors are NOT verified automatically
+            user.setVerified(false);
+
+        } else {
+
+            // Patients can be automatically verified
+            user.setVerified(true);
+        }
 
         // =========================
         // HASH PASSWORD
@@ -76,11 +87,8 @@ public class UserService {
             );
         }
 
-
-        // Save user
         return userRepository.save(user);
     }
-
 
     // =========================
     // LOGIN
@@ -101,39 +109,41 @@ public class UserService {
                 "password must not be null"
         );
 
-
-        // Find user by email
         Optional<User> userOptional =
                 userRepository.findByEmail(email);
 
-
-        // Email not found
         if (userOptional.isEmpty()) {
             return null;
         }
 
-
         User user = userOptional.get();
 
+        // =========================
+        // DOCTOR VERIFICATION CHECK
+        // =========================
 
-        // Check password using BCrypt
+        if ("Doctor".equalsIgnoreCase(user.getRole())
+                && !user.isVerified()) {
+
+            return null;
+        }
+
+        // =========================
+        // PASSWORD CHECK
+        // =========================
+
         boolean passwordMatches =
                 passwordEncoder.matches(
                         password,
                         user.getPasswordHash()
                 );
 
-
-        // Login successful
         if (passwordMatches) {
             return user;
         }
 
-
-        // Wrong password
         return null;
     }
-
 
     // =========================
     // GET ALL USERS
@@ -141,10 +151,8 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-
         return userRepository.findAll();
     }
-
 
     // =========================
     // GET USER BY ID
@@ -160,7 +168,6 @@ public class UserService {
                 )
         );
     }
-
 
     // =========================
     // GET USER BY EMAIL
@@ -178,18 +185,41 @@ public class UserService {
         );
     }
 
-
     // =========================
     // GET USERS BY ROLE
     // =========================
 
     @Transactional(readOnly = true)
-    public List<User> getUsersByRole(
-            String role) {
-
+    public List<User> getUsersByRole(String role) {
         return userRepository.findByRole(role);
     }
 
+    // =========================
+    // VERIFY DOCTOR
+    // =========================
+
+    @Transactional
+    public User verifyDoctor(Long id) {
+
+        Optional<User> userOptional =
+                userRepository.findById(id);
+
+        if (userOptional.isEmpty()) {
+            return null;
+        }
+
+        User user = userOptional.get();
+
+        if (!"Doctor".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException(
+                    "User is not a doctor"
+            );
+        }
+
+        user.setVerified(true);
+
+        return userRepository.save(user);
+    }
 
     // =========================
     // DELETE USER

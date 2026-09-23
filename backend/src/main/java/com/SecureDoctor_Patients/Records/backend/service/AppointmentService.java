@@ -1,7 +1,6 @@
 package com.SecureDoctor_Patients.Records.backend.service;
 
 import java.time.LocalDate;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +18,6 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
 
-
     // =========================
     // CONSTRUCTOR
     // =========================
@@ -32,7 +30,6 @@ public class AppointmentService {
         this.userRepository = userRepository;
     }
 
-
     // =========================
     // CREATE APPOINTMENT
     // =========================
@@ -41,9 +38,9 @@ public class AppointmentService {
     public Appointment saveAppointment(
             Appointment appointment) {
 
-        // -------------------------
-        // Basic validation
-        // -------------------------
+        // =========================
+        // BASIC VALIDATION
+        // =========================
 
         if (appointment == null) {
             throw new IllegalArgumentException(
@@ -75,7 +72,6 @@ public class AppointmentService {
             );
         }
 
-
         // =========================
         // CHECK DOCTOR
         // =========================
@@ -86,14 +82,14 @@ public class AppointmentService {
                 );
 
         if (doctor.isEmpty()) {
-
             throw new IllegalArgumentException(
                     "Doctor not found"
             );
         }
 
-
-        // Check role
+        // =========================
+        // CHECK DOCTOR ROLE
+        // =========================
 
         if (!"Doctor".equalsIgnoreCase(
                 doctor.get().getRole())) {
@@ -103,6 +99,16 @@ public class AppointmentService {
             );
         }
 
+        // =========================
+        // CHECK DOCTOR VERIFICATION
+        // =========================
+
+        if (!doctor.get().isVerified()) {
+
+            throw new IllegalArgumentException(
+                    "Doctor is not verified"
+            );
+        }
 
         // =========================
         // CHECK PATIENT
@@ -114,14 +120,14 @@ public class AppointmentService {
                 );
 
         if (patient.isEmpty()) {
-
             throw new IllegalArgumentException(
                     "Patient not found"
             );
         }
 
-
-        // Check role
+        // =========================
+        // CHECK PATIENT ROLE
+        // =========================
 
         if (!"Patient".equalsIgnoreCase(
                 patient.get().getRole())) {
@@ -131,9 +137,8 @@ public class AppointmentService {
             );
         }
 
-
         // =========================
-        // CHECK DATE
+        // CHECK APPOINTMENT DATE
         // =========================
 
         if (appointment.getAppointmentDate()
@@ -143,7 +148,6 @@ public class AppointmentService {
                     "Appointment date cannot be in the past"
             );
         }
-
 
         // =========================
         // CHECK DUPLICATE TIME SLOT
@@ -157,14 +161,12 @@ public class AppointmentService {
                                 appointment.getAppointmentTime()
                         );
 
-
         if (!existingAppointments.isEmpty()) {
 
             throw new IllegalArgumentException(
                     "Doctor is already booked at this date and time"
             );
         }
-
 
         // =========================
         // DEFAULT STATUS
@@ -176,16 +178,14 @@ public class AppointmentService {
             appointment.setStatus("Booked");
         }
 
-
         // =========================
-        // SAVE
+        // SAVE APPOINTMENT
         // =========================
 
         return appointmentRepository.save(
                 appointment
         );
     }
-
 
     // =========================
     // GET ALL APPOINTMENTS
@@ -197,7 +197,6 @@ public class AppointmentService {
         return appointmentRepository.findAll();
     }
 
-
     // =========================
     // GET APPOINTMENT BY ID
     // =========================
@@ -208,7 +207,6 @@ public class AppointmentService {
 
         return appointmentRepository.findById(id);
     }
-
 
     // =========================
     // UPDATE APPOINTMENT
@@ -222,15 +220,12 @@ public class AppointmentService {
         Optional<Appointment> existingAppointment =
                 appointmentRepository.findById(id);
 
-
         if (existingAppointment.isEmpty()) {
             return null;
         }
 
-
         Appointment appointment =
                 existingAppointment.get();
-
 
         appointment.setDoctorId(
                 appointmentDetails.getDoctorId()
@@ -252,53 +247,63 @@ public class AppointmentService {
                 appointmentDetails.getStatus()
         );
 
-
         return appointmentRepository.save(
                 appointment
         );
     }
+
     // =========================
-// UPDATE APPOINTMENT STATUS
-// =========================
+    // UPDATE APPOINTMENT STATUS
+    // =========================
 
-public Appointment updateAppointmentStatus(
-        Long id,
-        String status) {
+    @Transactional
+    public Appointment updateAppointmentStatus(
+            Long id,
+            String status) {
 
-    Optional<Appointment> existingAppointment =
-            appointmentRepository.findById(id);
+        Optional<Appointment> existingAppointment =
+                appointmentRepository.findById(id);
 
-    if (existingAppointment.isPresent()) {
+        if (existingAppointment.isPresent()) {
 
-        Appointment appointment =
-                existingAppointment.get();
+            Appointment appointment =
+                    existingAppointment.get();
 
-        appointment.setStatus(status);
+            appointment.setStatus(status);
 
-        return appointmentRepository.save(appointment);
+            return appointmentRepository.save(
+                    appointment
+            );
+        }
+
+        return null;
     }
 
-    return null;
-}
     // =========================
-// GET APPOINTMENTS BY DOCTOR
-// =========================
+    // GET APPOINTMENTS BY DOCTOR
+    // =========================
 
-@Transactional(readOnly = true)
-public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
+    @Transactional(readOnly = true)
+    public List<Appointment> getAppointmentsByDoctor(
+            Long doctorId) {
 
-    return appointmentRepository.findByDoctorId(doctorId);
-}
+        return appointmentRepository.findByDoctorId(
+                doctorId
+        );
+    }
 
-// =========================
-// GET APPOINTMENTS BY PATIENT
-// =========================
+    // =========================
+    // GET APPOINTMENTS BY PATIENT
+    // =========================
 
-@Transactional(readOnly = true)
-public List<Appointment> getAppointmentsByPatient(Long patientId) {
+    @Transactional(readOnly = true)
+    public List<Appointment> getAppointmentsByPatient(
+            Long patientId) {
 
-    return appointmentRepository.findByPatientId(patientId);
-}
+        return appointmentRepository.findByPatientId(
+                patientId
+        );
+    }
 
     // =========================
     // DELETE APPOINTMENT

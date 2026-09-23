@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +25,6 @@ public class UserController {
     private final UserService userService;
     private final AuditLogService auditLogService;
 
-
     // =========================
     // CONSTRUCTOR
     // =========================
@@ -39,9 +37,8 @@ public class UserController {
         this.auditLogService = auditLogService;
     }
 
-
     // =========================
-    // CREATE USER
+    // CREATE USER / REGISTER
     // =========================
 
     @PostMapping
@@ -57,7 +54,6 @@ public class UserController {
         );
     }
 
-
     // =========================
     // GET ALL USERS
     // =========================
@@ -69,7 +65,6 @@ public class UserController {
                 userService.getAllUsers()
         );
     }
-
 
     // =========================
     // GET ALL DOCTORS
@@ -83,7 +78,6 @@ public class UserController {
         );
     }
 
-
     // =========================
     // LOGIN
     // =========================
@@ -92,22 +86,15 @@ public class UserController {
     public ResponseEntity<?> login(
             @RequestBody LoginRequest request) {
 
-        // CHECK WHETHER LOGIN API IS CALLED
         System.out.println(
                 "LOGIN API CALLED"
         );
-
-
-        // =========================
-        // CHECK LOGIN
-        // =========================
 
         User user =
                 userService.login(
                         request.getEmail(),
                         request.getPassword()
                 );
-
 
         // =========================
         // LOGIN SUCCESS
@@ -119,17 +106,14 @@ public class UserController {
                     "LOGIN SUCCESS - CREATING AUDIT LOG"
             );
 
-
             auditLogService.logAction(
                     user.getId(),
                     "LOGIN SUCCESS",
                     "127.0.0.1"
             );
 
-
             return ResponseEntity.ok(user);
         }
-
 
         // =========================
         // LOGIN FAILED
@@ -139,13 +123,11 @@ public class UserController {
                 "LOGIN FAILED - CREATING AUDIT LOG"
         );
 
-
         auditLogService.logAction(
                 null,
                 "LOGIN FAILED",
                 "127.0.0.1"
         );
-
 
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -153,7 +135,6 @@ public class UserController {
                         "Invalid email or password"
                 );
     }
-
 
     // =========================
     // GET USER BY ID
@@ -173,7 +154,6 @@ public class UserController {
                 );
     }
 
-
     // =========================
     // GET USER BY EMAIL
     // =========================
@@ -191,7 +171,6 @@ public class UserController {
                                 .build()
                 );
     }
-
 
     // =========================
     // UPDATE USER
@@ -222,7 +201,6 @@ public class UserController {
                             userDetails.getRole()
                     );
 
-
                     return ResponseEntity.ok(
                             userService.saveUser(
                                     existingUser
@@ -236,6 +214,28 @@ public class UserController {
                 );
     }
 
+    // =========================
+    // VERIFY DOCTOR
+    // =========================
+
+    @PutMapping("/{id}/verify")
+    public ResponseEntity<User> verifyDoctor(
+            @PathVariable Long id) {
+
+        User verifiedDoctor =
+                userService.verifyDoctor(id);
+
+        if (verifiedDoctor == null) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
+        }
+
+        return ResponseEntity.ok(
+                verifiedDoctor
+        );
+    }
 
     // =========================
     // DELETE USER
@@ -255,7 +255,6 @@ public class UserController {
                     .noContent()
                     .build();
         }
-
 
         return ResponseEntity
                 .notFound()
