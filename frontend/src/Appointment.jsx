@@ -80,7 +80,9 @@ function Appointment({ patientId, patientName }) {
     e.preventDefault();
 
 
-    // Check doctor
+    // =========================
+    // CHECK DOCTOR
+    // =========================
 
     if (!doctorId) {
 
@@ -91,13 +93,41 @@ function Appointment({ patientId, patientName }) {
     }
 
 
-    // Check patient
+    // =========================
+    // CHECK PATIENT
+    // =========================
 
     if (!patientId) {
 
       alert(
         "Patient information not found. Please login again."
       );
+
+      return;
+
+    }
+
+
+    // =========================
+    // CHECK DATE
+    // =========================
+
+    if (!appointmentDate) {
+
+      alert("Please select an appointment date.");
+
+      return;
+
+    }
+
+
+    // =========================
+    // CHECK TIME
+    // =========================
+
+    if (!appointmentTime) {
+
+      alert("Please select an appointment time.");
 
       return;
 
@@ -163,8 +193,14 @@ function Appointment({ patientId, patientName }) {
 
         setStatus("Booked");
 
+      }
 
-      } else {
+
+      // =========================
+      // BOOKING FAILED
+      // =========================
+
+      else {
 
         const errorText =
           await response.text();
@@ -174,9 +210,109 @@ function Appointment({ patientId, patientName }) {
           errorText
         );
 
-        alert(
-          "Appointment booking failed!"
-        );
+
+        // =========================
+        // DOCTOR NOT VERIFIED
+        // =========================
+
+        if (
+          errorText
+            .toLowerCase()
+            .includes("doctor is not verified")
+        ) {
+
+          alert(
+            "Appointment cannot be booked.\n\n" +
+            "The selected doctor is not verified."
+          );
+
+        }
+
+
+        // =========================
+        // DOCTOR NOT FOUND
+        // =========================
+
+        else if (
+          errorText
+            .toLowerCase()
+            .includes("doctor not found")
+        ) {
+
+          alert(
+            "Appointment cannot be booked.\n\n" +
+            "Doctor not found."
+          );
+
+        }
+
+
+        // =========================
+        // NOT A DOCTOR
+        // =========================
+
+        else if (
+          errorText
+            .toLowerCase()
+            .includes("not a doctor")
+        ) {
+
+          alert(
+            "Appointment cannot be booked.\n\n" +
+            "Selected user is not a doctor."
+          );
+
+        }
+
+
+        // =========================
+        // DOCTOR ALREADY BOOKED
+        // =========================
+
+        else if (
+          errorText
+            .toLowerCase()
+            .includes("already booked")
+        ) {
+
+          alert(
+            "Appointment cannot be booked.\n\n" +
+            "Doctor is already booked at this date and time."
+          );
+
+        }
+
+
+        // =========================
+        // PAST DATE
+        // =========================
+
+        else if (
+          errorText
+            .toLowerCase()
+            .includes("past")
+        ) {
+
+          alert(
+            "Appointment cannot be booked.\n\n" +
+            "Appointment date cannot be in the past."
+          );
+
+        }
+
+
+        // =========================
+        // OTHER BACKEND ERROR
+        // =========================
+
+        else {
+
+          alert(
+            "Appointment booking failed.\n\n" +
+            errorText
+          );
+
+        }
 
       }
 
