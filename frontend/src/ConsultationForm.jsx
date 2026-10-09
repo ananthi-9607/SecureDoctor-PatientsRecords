@@ -1,39 +1,50 @@
 import { useState } from "react";
+import API_BASE_URL from "./api";
 import "./ConsultationForm.css";
 
 function ConsultationForm({
   appointment,
   onBack,
-  onConsultationSaved
+  onConsultationSaved,
 }) {
-  // =========================
-  // CONSULTATION STATES
-  // =========================
-
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
-
   const [loading, setLoading] = useState(false);
-
-  // =========================
-  // PRESCRIPTION STATES
-  // =========================
 
   const [consultationId, setConsultationId] = useState(null);
 
   const [medicineName, setMedicineName] = useState("");
   const [dosage, setDosage] = useState("");
   const [instruction, setInstruction] = useState("");
+  const [prescriptionLoading, setPrescriptionLoading] = useState(false);
 
-  const [prescriptionLoading, setPrescriptionLoading] =
-    useState(false);
+  const appointmentId =
+    appointment?.appointmentId ??
+    appointment?.appointment_id ??
+    appointment?.id;
 
-  // =========================
+  const patientId =
+    appointment?.patientId ??
+    appointment?.patient_id;
+
+  const appointmentDate =
+    appointment?.appointmentDate ??
+    appointment?.appointment_date ??
+    "Not available";
+
+  const appointmentTime =
+    appointment?.appointmentTime ??
+    appointment?.appointment_time ??
+    "Not available";
+
   // SAVE CONSULTATION
-  // =========================
-
   const saveConsultation = async (e) => {
     e.preventDefault();
+
+    if (appointmentId == null) {
+      alert("Appointment ID is missing.");
+      return;
+    }
 
     if (!diagnosis.trim()) {
       alert("Please enter the diagnosis.");
@@ -49,120 +60,89 @@ function ConsultationForm({
 
     try {
       const consultationData = {
-        appointmentId:
-          appointment.appointmentId ??
-          appointment.appointment_id ??
-          appointment.id,
-
-        diagnosis: diagnosis,
-
-        encryptedNotes: notes
+        appointmentId: Number(appointmentId),
+        diagnosis: diagnosis.trim(),
+        encryptedNotes: notes.trim(),
       };
 
-      console.log(
-        "Saving consultation:",
-        consultationData
-      );
-
       const response = await fetch(
-        "https://securedoctor-patientsrecords-production.up.railway.app/consultations",
+        `${API_BASE_URL}/consultations`,
         {
           method: "POST",
-
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-
-          body: JSON.stringify(
-            consultationData
-          )
+          body: JSON.stringify(consultationData),
         }
       );
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorText =
-          await response.text();
-
-        console.error(
-          "Consultation error:",
-          errorText
-        );
-
+        console.error("Consultation error:", responseText);
         throw new Error(
-          "Failed to save consultation"
+          responseText || "Failed to save consultation."
         );
       }
 
-      const data =
-        await response.json();
+      let data = {};
 
-      console.log(
-        "Consultation saved:",
-        data
-      );
-
-      // =========================
-      // GET CONSULTATION ID
-      // =========================
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(
+            "Consultation was submitted, but the server returned an unexpected response."
+          );
+        }
+      }
 
       const newConsultationId =
         data.consultId ??
         data.consult_id ??
         data.id;
 
-      setConsultationId(
-        newConsultationId
-      );
+      if (newConsultationId == null) {
+        throw new Error(
+          "Consultation saved, but the response did not contain a consultation ID."
+        );
+      }
+
+      setConsultationId(newConsultationId);
 
       alert(
         "Consultation saved successfully! Now add prescription."
       );
-
     } catch (error) {
-      console.error(
-        "Save consultation error:",
-        error
-      );
+      console.error("Save consultation error:", error);
 
       alert(
-        "Unable to save consultation."
+        error.message || "Unable to save consultation."
       );
-
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
   // ADD PRESCRIPTION
-  // =========================
-
   const addPrescription = async () => {
-    if (!consultationId) {
-      alert(
-        "Consultation ID is missing."
-      );
+    if (consultationId == null) {
+      alert("Consultation ID is missing.");
       return;
     }
 
     if (!medicineName.trim()) {
-      alert(
-        "Please enter medicine name."
-      );
+      alert("Please enter medicine name.");
       return;
     }
 
     if (!dosage.trim()) {
-      alert(
-        "Please enter dosage."
-      );
+      alert("Please enter dosage.");
       return;
     }
 
     if (!instruction.trim()) {
-      alert(
-        "Please enter instruction."
-      );
+      alert("Please enter instruction.");
       return;
     }
 
@@ -170,271 +150,151 @@ function ConsultationForm({
 
     try {
       const prescriptionData = {
-        consultId: consultationId,
-
-        medicineName: medicineName,
-
-        dosage: dosage,
-
-        instruction: instruction
+        consultId: Number(consultationId),
+        medicineName: medicineName.trim(),
+        dosage: dosage.trim(),
+        instruction: instruction.trim(),
       };
 
-      console.log(
-        "Saving prescription:",
-        prescriptionData
-      );
-
       const response = await fetch(
-        "https://securedoctor-patientsrecords-production.up.railway.app/prescriptions",
+        `${API_BASE_URL}/prescriptions`,
         {
           method: "POST",
-
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-
-          body: JSON.stringify(
-            prescriptionData
-          )
+          body: JSON.stringify(prescriptionData),
         }
       );
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorText =
-          await response.text();
-
-        console.error(
-          "Prescription error:",
-          errorText
-        );
-
+        console.error("Prescription error:", responseText);
         throw new Error(
-          "Failed to save prescription"
+          responseText || "Failed to save prescription."
         );
       }
-
-      const data =
-        await response.json();
-
-      console.log(
-        "Prescription saved:",
-        data
-      );
-
-      // =========================
-      // CLEAR INPUT FIELDS
-      // =========================
 
       setMedicineName("");
       setDosage("");
       setInstruction("");
 
-      alert(
-        "Prescription added successfully!"
-      );
-
+      alert("Prescription added successfully!");
     } catch (error) {
-      console.error(
-        "Save prescription error:",
-        error
-      );
+      console.error("Save prescription error:", error);
 
       alert(
-        "Unable to save prescription."
+        error.message || "Unable to save prescription."
       );
-
     } finally {
-      setPrescriptionLoading(
-        false
-      );
+      setPrescriptionLoading(false);
     }
   };
 
-  // =========================
   // FINISH CONSULTATION
-  // =========================
-
   const finishConsultation = () => {
+    if (consultationId == null) {
+      alert("Please save the consultation first.");
+      return;
+    }
+
     if (onConsultationSaved) {
       onConsultationSaved({
-        consultId: consultationId
+        consultId: consultationId,
       });
     }
   };
 
-  // =========================
-  // UI
-  // =========================
-
   return (
     <div className="consultation-page">
-
-      {/* =========================
-          HEADER
-      ========================= */}
-
       <header className="consultation-header">
-
         <div className="consultation-brand">
-
-          <div className="consultation-logo">
-            ✚
-          </div>
+          <div className="consultation-logo">✚</div>
 
           <div>
-            <h2>
-              SecureDoctor
-            </h2>
-
-            <span>
-              Doctor Portal
-            </span>
+            <h2>SecureDoctor</h2>
+            <span>Doctor Portal</span>
           </div>
-
         </div>
 
         <button
+          type="button"
           className="consultation-back-button"
           onClick={onBack}
         >
           ← Back
         </button>
-
       </header>
 
-
-      {/* =========================
-          MAIN CONTENT
-      ========================= */}
-
       <main className="consultation-container">
-
         <div className="consultation-title">
-
-          <span>
-            CONSULTATION
-          </span>
-
-          <h1>
-            Patient Consultation
-          </h1>
+          <span>CONSULTATION</span>
+          <h1>Patient Consultation</h1>
 
           <p>
-            Record the consultation details
-            securely for this appointment.
+            Record the consultation details securely for this
+            appointment.
           </p>
-
         </div>
 
-
-        {/* =========================
-            APPOINTMENT DETAILS
-        ========================= */}
-
+        {/* APPOINTMENT DETAILS */}
         <section className="appointment-info-card">
-
-          <h3>
-            Appointment Information
-          </h3>
+          <h3>Appointment Information</h3>
 
           <div className="appointment-info-grid">
-
             <div>
-              <span>
-                Patient ID
-              </span>
-
-              <strong>
-                {appointment.patientId}
-              </strong>
+              <span>Patient ID</span>
+              <strong>{patientId ?? "Not available"}</strong>
             </div>
 
-
             <div>
-              <span>
-                Appointment Date
-              </span>
-
-              <strong>
-                {appointment.appointmentDate}
-              </strong>
+              <span>Appointment Date</span>
+              <strong>{appointmentDate}</strong>
             </div>
 
-
             <div>
-              <span>
-                Appointment Time
-              </span>
-
-              <strong>
-                {appointment.appointmentTime}
-              </strong>
+              <span>Appointment Time</span>
+              <strong>{appointmentTime}</strong>
             </div>
-
           </div>
-
         </section>
 
-
-        {/* =========================
-            CONSULTATION FORM
-        ========================= */}
-
+        {/* CONSULTATION FORM */}
         {!consultationId && (
-
           <form
             className="consultation-form"
             onSubmit={saveConsultation}
           >
-
-            {/* DIAGNOSIS */}
-
             <div className="form-section">
-
-              <label>
-                Diagnosis
-              </label>
+              <label htmlFor="diagnosis">Diagnosis</label>
 
               <input
+                id="diagnosis"
                 type="text"
                 placeholder="Enter diagnosis"
                 value={diagnosis}
-                onChange={(e) =>
-                  setDiagnosis(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setDiagnosis(e.target.value)}
+                required
               />
-
             </div>
 
-
-            {/* NOTES */}
-
             <div className="form-section">
-
-              <label>
+              <label htmlFor="consultation-notes">
                 Consultation Notes
               </label>
 
               <textarea
-                rows="8"
+                id="consultation-notes"
+                rows={8}
                 placeholder="Enter consultation notes, observations and recommendations..."
                 value={notes}
-                onChange={(e) =>
-                  setNotes(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setNotes(e.target.value)}
+                required
               />
-
             </div>
 
-
-            {/* ACTIONS */}
-
             <div className="consultation-actions">
-
               <button
                 type="button"
                 className="cancel-consultation-button"
@@ -443,163 +303,91 @@ function ConsultationForm({
                 Cancel
               </button>
 
-
               <button
                 type="submit"
                 className="save-consultation-button"
                 disabled={loading}
               >
-
-                {loading
-                  ? "Saving..."
-                  : "Save Consultation"}
-
+                {loading ? "Saving..." : "Save Consultation"}
               </button>
-
             </div>
-
           </form>
-
         )}
 
-
-        {/* =========================
-            PRESCRIPTION SECTION
-        ========================= */}
-
-        {consultationId && (
-
+        {/* PRESCRIPTION SECTION */}
+        {consultationId != null && (
           <section className="prescription-section">
-
             <div className="prescription-title">
-
-              <span>
-                PRESCRIPTION
-              </span>
-
-              <h2>
-                Add Medicines
-              </h2>
+              <span>PRESCRIPTION</span>
+              <h2>Add Medicines</h2>
 
               <p>
-                Add the medicines prescribed
-                for this consultation.
+                Add the medicines prescribed for this consultation.
               </p>
-
             </div>
-
-
-            {/* CONSULTATION ID */}
 
             <div className="consultation-id-box">
-
-              <span>
-                CONSULTATION ID
-              </span>
-
-              <strong>
-                #{consultationId}
-              </strong>
-
+              <span>CONSULTATION ID</span>
+              <strong>#{consultationId}</strong>
             </div>
 
-
-            {/* MEDICINE FORM */}
-
             <div className="prescription-form">
-
-              {/* MEDICINE NAME */}
-
               <div className="form-section">
-
-                <label>
-                  Medicine Name
-                </label>
+                <label htmlFor="medicine-name">Medicine Name</label>
 
                 <input
+                  id="medicine-name"
                   type="text"
                   placeholder="Example: Paracetamol"
                   value={medicineName}
                   onChange={(e) =>
-                    setMedicineName(
-                      e.target.value
-                    )
+                    setMedicineName(e.target.value)
                   }
+                  required
                 />
-
               </div>
 
-
-              {/* DOSAGE */}
-
               <div className="form-section">
-
-                <label>
-                  Dosage
-                </label>
+                <label htmlFor="dosage">Dosage</label>
 
                 <input
+                  id="dosage"
                   type="text"
                   placeholder="Example: 500mg"
                   value={dosage}
-                  onChange={(e) =>
-                    setDosage(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setDosage(e.target.value)}
+                  required
                 />
-
               </div>
 
-
-              {/* INSTRUCTION */}
-
               <div className="form-section">
-
-                <label>
-                  Instruction
-                </label>
+                <label htmlFor="instruction">Instruction</label>
 
                 <input
+                  id="instruction"
                   type="text"
                   placeholder="Example: Take after food"
                   value={instruction}
                   onChange={(e) =>
-                    setInstruction(
-                      e.target.value
-                    )
+                    setInstruction(e.target.value)
                   }
+                  required
                 />
-
               </div>
-
-
-              {/* ADD BUTTON */}
 
               <button
                 type="button"
                 className="add-prescription-button"
                 onClick={addPrescription}
-                disabled={
-                  prescriptionLoading
-                }
+                disabled={prescriptionLoading}
               >
-
                 {prescriptionLoading
                   ? "Adding..."
                   : "+ Add Prescription"}
-
               </button>
-
             </div>
 
-
-            {/* =========================
-                FINISH
-            ========================= */}
-
             <div className="consultation-actions">
-
               <button
                 type="button"
                 className="cancel-consultation-button"
@@ -608,7 +396,6 @@ function ConsultationForm({
                 Back
               </button>
 
-
               <button
                 type="button"
                 className="save-consultation-button"
@@ -616,15 +403,10 @@ function ConsultationForm({
               >
                 Finish Consultation
               </button>
-
             </div>
-
           </section>
-
         )}
-
       </main>
-
     </div>
   );
 }
